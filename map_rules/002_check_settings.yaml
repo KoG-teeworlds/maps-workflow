@@ -1,0 +1,14 @@
+rules:
+  - name: check_if_contains_allowed_map_settings
+    module: is_setting_valid
+    description: "Check if the map has allowed map settings"
+    type: "require"
+    params:
+      allowed:
+        sv_kog_map_quests:
+          type: list
+          items:
+            - Q_NO_HAMMER
+            - Q_NO_PLATFORM
+            - Q_TEAM_15
+    depends_on: []
