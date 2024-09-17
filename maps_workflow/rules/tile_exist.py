@@ -1,4 +1,5 @@
 from twmap import Map
+import numpy as np
 
 from maps_workflow.exceptions import RuleException, RuleViolation
 
@@ -8,19 +9,25 @@ def tile_exist(raw_file, tw_map: Map, params):
     expected_tile = params['expected_tile']
     found_tile = []
 
+    has_expected_layer = hasattr(params, 'expected_layer')
     for group in tw_map.groups:
         for layer in group.layers:
-            if layer.kind() == "Tiles":
-                for tile_layer in layer.tiles:
-                    height, width = tile_layer.shape
-                    for h in range(height):
-                        for w in range(width):
-                            tile = tile_layer[(h, w)]
-                            if tile == expected_tile:
-                                found_tile.append([tile_layer, h, w])
-                                if hasattr(params, 'expected_layer'):
-                                    if layer.name != params['expected_layer']:
-                                        violations.append(RuleViolation(message=f"Found tile \"{params['humanized']}\" at position ({h}, {w}) in layer \"{layer.name}\" instead of \"{params['expected_layer']}\" layer.", errors=[]))
+            if layer.kind() != "Tiles":
+                continue
+
+            for tile_layer in layer.tiles:
+                tile_layer_np = np.array(tile_layer)
+                matching_indices = np.where(tile_layer_np == expected_tile)
+
+                for h, w in zip(*matching_indices):
+                    found_tile.append([tile_layer, h, w])
+
+                    if has_expected_layer and layer.name != params['expected_layer']:
+                        violations.append(RuleViolation(
+                            message=f"Found tile \"{params['humanized']}\" at position ({h}, {w}) "
+                                    f"in layer \"{layer.name}\" instead of \"{params['expected_layer']}\" layer.",
+                            errors=[]
+                        ))
 
     if len(found_tile) < 1:
         raise RuleException(message=f"Expected \"{params['humanized']}\" is not on the map at all")
