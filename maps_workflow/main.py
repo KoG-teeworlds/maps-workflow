@@ -2,6 +2,7 @@ import importlib
 import os
 import time
 import twmap
+import argparse
 from ruamel.yaml import YAML
 
 
@@ -18,10 +19,12 @@ def load_rule_from_module(rule_name):
         print(f"⚠️ Module 'maps_workflow.rules.{rule_name}' not found.")
         return None
 
-def load_all_rules(directory='rules/'):
-    print(f"Loading rules from {directory}")
+def load_all_rules(directory='rules/', exclude=[]):
     all_rules = {'rules': []}
     for filename in sorted(os.listdir(directory)):
+        if any(filename.startswith(skip) for skip in exclude):
+            continue
+
         if filename.endswith('.yaml'):
             file_path = os.path.join(directory, filename)
             rules = load_rules_from_file(file_path)
@@ -101,8 +104,19 @@ def execute_rules(raw_file, map_data, config):
     return True
 
 if __name__ == '__main__':
-    config = load_all_rules('map_rules/')
-    raw_file = './Aip-Gores.map'
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--skip")
+    args = parser.parse_args()
+
+    excluded = []
+    if args.skip:
+        if "," in args.skip:
+            excluded = args.skip.split(",")
+        else:
+            excluded = [args.skip]
+
+    config = load_all_rules('map_rules/', exclude=excluded)
+    raw_file = './Pokemon_Gen1.map'
     tw_map = twmap.Map(raw_file)
     result = execute_rules(raw_file, tw_map, config)
 

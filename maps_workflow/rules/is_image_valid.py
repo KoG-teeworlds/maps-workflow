@@ -17,6 +17,8 @@ def is_image_valid(raw_file, tw_map: Map, params):
             if image.data is not None and image.data.size > 0:
                 sha512_hash = hashlib.sha512()
                 sha512_hash.update(image.data.all().tobytes())
+
+                print("New image")
                 print(sha512_hash.hexdigest())
                 # TODO: Check hash against known hashes otherwise ask for permission
             else:
