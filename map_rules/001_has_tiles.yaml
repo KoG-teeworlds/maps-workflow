@@ -1,0 +1,33 @@
+rules:
+  - name: check_if_spawn_exists
+    module: tile_exist
+    description: "Check if the map has spawn tiles"
+    type: "require"
+    params:
+      humanized: "Spawn"
+      expected_tile: 192
+      min_occurances: 1
+      max_occurances: 10
+    depends_on: []
+
+  - name: check_if_start_exists
+    module: tile_exist
+    description: "Check if the map has a start line"
+    type: "require"
+    params:
+      humanized: "Start"
+      expected_tile: 33
+      min_occurances: 1
+      max_occurances: 10
+    depends_on: [check_if_spawn_exists]
+
+  - name: check_if_finish_exists
+    module: tile_exist
+    description: "Check if the map has a finish line"
+    type: "require"
+    params:
+      humanized: "Finish"
+      expected_tile: 34
+      min_occurances: 1
+      max_occurances: 10
+    depends_on: [check_if_start_exists]

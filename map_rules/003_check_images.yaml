@@ -1,0 +1,7 @@
+rules:
+  - name: check_if_valid_images
+    module: is_image_valid
+    description: "Check if the map has allowed map settings"
+    type: "skip"
+    params:
+    depends_on: []

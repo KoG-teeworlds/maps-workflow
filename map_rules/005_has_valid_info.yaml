@@ -1,0 +1,23 @@
+rules:
+  - name: check_if_valid_info
+    module: is_info_valid
+    description: "Check if the map has allowed map settings"
+    type: "fail"
+    params:
+      field: "license"
+      type: list
+      values:
+        - MIT
+      default: "KoG License"
+    depends_on: []
+
+  - name: check_if_author_is_valid
+    module: is_info_valid
+    description: "Check if the map author is valid"
+    type: fail
+    params:
+      field: "author"
+      type: regex
+      regex: ^[\w\W]+(,\s*[\w\W]+)*$
+      default: "King of Gores"
+    depends_on: []

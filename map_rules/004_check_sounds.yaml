@@ -1,0 +1,7 @@
+rules:
+  - name: check_if_valid_sounds
+    module: is_sound_valid
+    description: "Check if the map has allowed map settings"
+    type: "fail"
+    params:
+    depends_on: []

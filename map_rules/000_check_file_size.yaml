@@ -1,0 +1,8 @@
+rules:
+  - name: check_allowed_file_size
+    module: file_size
+    description: "Check if size is allowed"
+    type: "require"
+    params:
+      max_file_size: 10MB
+    depends_on: []
