@@ -55,13 +55,11 @@ def execute_rules(raw_file, map_data, config):
             rule_status[rule_name] = False
             continue
 
-        # Dynamically load the corresponding rule function from the 'rules' package
         rule_module = load_rule_from_module(r_module)
         if not rule_module:
             rule_status[rule_name] = False
             continue
 
-        # Get the rule function (assuming function name matches rule_name)
         rule_func: BaseRule = getattr(rule_module, r_class, None)(raw_file, map_data, params)
         if not rule_func:
             print(f"⚠️ Rule function '{rule_name}' not found in module '{r_module}'.")
@@ -97,7 +95,7 @@ def execute_rules(raw_file, map_data, config):
             rule_status[rule_name] = False
             if rule_type == "require":
                 print(f"❌ Rule '{rule_name}' encountered an error (REQUIRED). ({rule_time_elapsed:.2f}s) Exiting: {e}")
-                return False  # Exit workflow with failure
+                return False
             elif rule_type == "fail":
                 print(f"⚠️ Rule '{rule_name}' encountered an error ({rule_time_elapsed:.2f}s): {e}")
             elif rule_type == "skip":
