@@ -1,6 +1,7 @@
 rules:
   - name: check_if_valid_info
-    module: is_info_valid
+    module: rules.meta
+    class: Valid
     description: "Check if the map has allowed map settings"
     type: "fail"
     params:

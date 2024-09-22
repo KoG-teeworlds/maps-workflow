@@ -1,6 +1,7 @@
 rules:
   - name: check_allowed_file_size
-    module: file_size
+    module: rules.file
+    class: FileSize
     description: "Check if size is allowed"
     type: "require"
     params:

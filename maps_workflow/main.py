@@ -5,6 +5,8 @@ import twmap
 import argparse
 from ruamel.yaml import YAML
 
+from maps_workflow.baserule import BaseRule
+
 
 def load_rules_from_file(file_path):
     with open(file_path, 'r') as file:
@@ -13,10 +15,10 @@ def load_rules_from_file(file_path):
 
 def load_rule_from_module(rule_name):
     try:
-        module = importlib.import_module(f"rules.{rule_name}")
+        module = importlib.import_module(f"maps_workflow.{rule_name}")
         return module
     except ModuleNotFoundError:
-        print(f"⚠️ Module 'maps_workflow.rules.{rule_name}' not found.")
+        print(f"⚠️ Module 'maps_workflow.{rule_name}' not found.")
         return None
 
 def load_all_rules(directory='rules/', exclude=[]):
@@ -44,6 +46,7 @@ def execute_rules(raw_file, map_data, config):
         rule_name = rule['name']
         rule_type = rule['type']
         r_module = rule['module']
+        r_class = rule['class']
         params = rule.get('params', {})
         dependencies = rule.get('depends_on', [])
 
@@ -59,15 +62,15 @@ def execute_rules(raw_file, map_data, config):
             continue
 
         # Get the rule function (assuming function name matches rule_name)
-        rule_func = getattr(rule_module, r_module, None)
+        rule_func: BaseRule = getattr(rule_module, r_class, None)(raw_file, map_data, params)
         if not rule_func:
-            print(f"⚠️ Rule function '{rule_name}' not found in module 'rules.{r_module}'.")
+            print(f"⚠️ Rule function '{rule_name}' not found in module '{r_module}'.")
             rule_status[rule_name] = False
             continue
 
         try:
             rule_time_started = time.time()
-            violations = rule_func(raw_file, map_data, params)
+            violations = rule_func.evaluate()
             rule_time_finished = time.time()
             rule_time_elapsed = rule_time_finished - rule_time_started
 
@@ -103,6 +106,28 @@ def execute_rules(raw_file, map_data, config):
     print("🎉 All rules processed successfully.")
     return True
 
+def generate_rules_file():
+    config = load_all_rules('map_rules/', exclude=[])
+    rule_evaluation = []
+    for rule in config['rules']:
+        rule_name = rule['name']
+        rule_desc = rule['description']
+        rule_type = rule['type']
+        r_module = rule['module']
+        r_class = rule['class']
+        params = rule.get('params', {})
+
+        rule_module = load_rule_from_module(r_module)
+        if not rule_module:
+            continue
+
+        rule_func: BaseRule = getattr(rule_module, r_class, None)(None, None, params)
+        if not rule_func:
+            continue
+
+        rule_evaluation.append({ 'name': rule_name, 'desc': rule_desc, 'explain': rule_func.explain(), 'required': True if rule_type == 'require' else False })
+    return rule_evaluation
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--skip")
@@ -116,7 +141,7 @@ if __name__ == '__main__':
             excluded = [args.skip]
 
     config = load_all_rules('map_rules/', exclude=excluded)
-    raw_file = './Pokemon_Gen1.map'
+    raw_file = './Aip-Gores.map'
     tw_map = twmap.Map(raw_file)
     result = execute_rules(raw_file, tw_map, config)
 

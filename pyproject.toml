@@ -7,9 +7,10 @@ readme = "README.md"
 
 [tool.poetry.scripts]
 maps-workflow = "maps_workflow.main:main"
+rules-to-json = "maps_workflow.main:generate_rules_file"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 twmap = "^0.6.1"
 numpy = "^2.1.1"
 ruamel-yaml = "^0.18.6"
