@@ -1,7 +1,7 @@
 rules:
   - name: check_if_valid_images
     module: rules.image
-    class: Valid
+    class_name: Valid
     description: "Check if the map has allowed map images"
     type: "skip"
     params:

@@ -1,8 +1,8 @@
 rules:
   - name: check_if_valid_sounds
-    module: rules.sound
-    class: Valid
     description: "Check if the map has allowed map settings"
+    module: rules.sound
+    class_name: Valid
     type: "fail"
     params:
     depends_on: []

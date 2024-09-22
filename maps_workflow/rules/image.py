@@ -1,9 +1,20 @@
 import hashlib
+
+from pydantic import BaseModel
 from maps_workflow.baserule import BaseRule
 from maps_workflow.exceptions import RuleViolation
 
 
+class ValidParams(BaseModel):
+    pass
+
+
 class Valid(BaseRule):
+    params: ValidParams
+
+    def get_params_model(self):
+        return ValidParams
+
     def evaluate(self):
         violations = []
         for image in self.map_file.images:

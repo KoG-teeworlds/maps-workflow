@@ -1,7 +1,7 @@
 rules:
   - name: check_if_contains_allowed_map_settings
     module: rules.setting
-    class: Valid
+    class_name: Valid
     description: "Check if the map has allowed map settings"
     type: "require"
     params:

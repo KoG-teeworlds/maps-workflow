@@ -1,8 +1,8 @@
 rules:
   - name: check_if_valid_info
-    module: rules.meta
-    class: Valid
     description: "Check if the map has allowed map settings"
+    module: rules.meta
+    class_name: Valid
     type: "fail"
     params:
       field: "license"
@@ -13,9 +13,9 @@ rules:
     depends_on: []
 
   - name: check_if_author_is_valid
-    module: rules.meta
-    class: Valid
     description: "Check if the map author is valid"
+    module: rules.meta
+    class_name: Valid
     type: fail
     params:
       field: "author"

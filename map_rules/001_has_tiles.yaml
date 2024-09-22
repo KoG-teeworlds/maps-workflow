@@ -1,7 +1,7 @@
 rules:
   - name: check_if_spawn_exists
     module: rules.tile
-    class: Exist
+    class_name: Exist
     description: "Check if the map has spawn tiles"
     type: "require"
     params:
@@ -13,24 +13,22 @@ rules:
 
   - name: check_if_start_exists
     module: rules.tile
-    class: Exist
+    class_name: Exist
     description: "Check if the map has a start line"
     type: "require"
     params:
       humanized: "Start"
       expected_tile: 33
       min_occurances: 1
-      max_occurances: 10
     depends_on: [check_if_spawn_exists]
 
   - name: check_if_finish_exists
     module: rules.tile
-    class: Exist
+    class_name: Exist
     description: "Check if the map has a finish line"
     type: "require"
     params:
       humanized: "Finish"
       expected_tile: 34
       min_occurances: 1
-      max_occurances: 10
     depends_on: [check_if_start_exists]

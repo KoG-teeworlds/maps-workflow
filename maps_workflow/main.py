@@ -1,11 +1,13 @@
 import importlib
 import os
 import time
+import traceback
+from pydantic import ValidationError
 import twmap
 import argparse
 from ruamel.yaml import YAML
 
-from maps_workflow.baserule import BaseRule
+from maps_workflow.baserule import BaseRule, BaseRuleConfig
 
 
 def load_rules_from_file(file_path):
@@ -43,27 +45,27 @@ def execute_rules(raw_file, map_data, config):
         return rule_status[rule_name]
 
     for rule in config['rules']:
-        rule_name = rule['name']
-        rule_type = rule['type']
-        r_module = rule['module']
-        r_class = rule['class']
-        params = rule.get('params', {})
-        dependencies = rule.get('depends_on', [])
-
-        if not all(can_run_rule(dep) for dep in dependencies):
-            print(f"⏭️  Skipping '{rule_name}' due to unmet dependencies.")
-            rule_status[rule_name] = False
+        try:
+            rule = BaseRuleConfig(**rule)
+        except ValidationError as e:
+            print(e)
+            rule_status[rule['name']] = False
             continue
 
-        rule_module = load_rule_from_module(r_module)
+        if not all(can_run_rule(dep) for dep in rule.depends_on):
+            print(f"⏭️  Skipping '{rule.name}' due to unmet dependencies.")
+            rule_status[rule.name] = False
+            continue
+
+        rule_module = load_rule_from_module(rule.module)
         if not rule_module:
-            rule_status[rule_name] = False
+            rule_status[rule.name] = False
             continue
 
-        rule_func: BaseRule = getattr(rule_module, r_class, None)(raw_file, map_data, params)
+        rule_func: BaseRule = getattr(rule_module, rule.class_name, None)(raw_file, map_data, rule.params)
         if not rule_func:
-            print(f"⚠️ Rule function '{rule_name}' not found in module '{r_module}'.")
-            rule_status[rule_name] = False
+            print(f"⚠️ Rule function '{rule.name}' not found in module '{rule.module}'.")
+            rule_status[rule.name] = False
             continue
 
         try:
@@ -79,27 +81,28 @@ def execute_rules(raw_file, map_data, config):
                     print(f"Violation: {violation}")
 
             if success:
-                print(f"✅ Rule '{rule_name}' passed. ({rule_time_elapsed:.2f}s)")
-                rule_status[rule_name] = True
+                print(f"✅ Rule '{rule.name}' passed. ({rule_time_elapsed:.2f}s)")
+                rule_status[rule.name] = True
             else:
-                rule_status[rule_name] = False
-                if rule_type == "require":
-                    print(f"❌ Rule '{rule_name}' failed (REQUIRED). Exiting with error. ({rule_time_elapsed:.2f}s)")
+                rule_status[rule.name] = False
+                if rule.type == "require":
+                    print(f"❌ Rule '{rule.name}' failed (REQUIRED). Exiting with error. ({rule_time_elapsed:.2f}s)")
                     return False
-                elif rule_type == "fail":
-                    print(f"⚠️ Rule '{rule_name}' failed but continuing. ({rule_time_elapsed:.2f}s)")
-                elif rule_type == "skip":
-                    print(f"⏭️ Rule '{rule_name}' failed but skipping. ({rule_time_elapsed:.2f}s)")
+                elif rule.type == "fail":
+                    print(f"⚠️ Rule '{rule.name}' failed but continuing. ({rule_time_elapsed:.2f}s)")
+                elif rule.type == "skip":
+                    print(f"⏭️ Rule '{rule.name}' failed but skipping. ({rule_time_elapsed:.2f}s)")
 
         except Exception as e:
-            rule_status[rule_name] = False
-            if rule_type == "require":
-                print(f"❌ Rule '{rule_name}' encountered an error (REQUIRED). ({rule_time_elapsed:.2f}s) Exiting: {e}")
+            rule_status[rule.name] = False
+            if rule.type == "require":
+                print(f"❌ Rule '{rule.name}' encountered an error (REQUIRED). ({rule_time_elapsed:.2f}s) Exiting: {e}")
                 return False
-            elif rule_type == "fail":
-                print(f"⚠️ Rule '{rule_name}' encountered an error ({rule_time_elapsed:.2f}s): {e}")
-            elif rule_type == "skip":
-                print(f"⏭️ Rule '{rule_name}' encountered an error but skipping ({rule_time_elapsed:.2f}s): {e}")
+            elif rule.type == "fail":
+                print(f"⚠️ Rule '{rule.name}' encountered an error ({rule_time_elapsed:.2f}s): {e}")
+                print(traceback.print_exc())
+            elif rule.type == "skip":
+                print(f"⏭️ Rule '{rule.name}' encountered an error but skipping ({rule_time_elapsed:.2f}s): {e}")
 
     print("🎉 All rules processed successfully.")
     return True
