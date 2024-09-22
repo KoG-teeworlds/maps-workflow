@@ -46,9 +46,7 @@ class Valid(BaseRule):
                 "regex": self.__handle_regex,
             }
             
-            retval = value_type.get(self.params.type, self.__handle_noop)(value)
-            if retval:
-                violations.append(retval)
+            violations.append(value_type.get(self.params.type, self.__handle_noop)(value))
         return violations
 
     def explain(self):

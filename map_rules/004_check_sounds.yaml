@@ -3,6 +3,6 @@ rules:
     description: "Check if the map has allowed map settings"
     module: rules.sound
     class_name: Valid
-    type: "fail"
+    type: fail
     params:
     depends_on: []

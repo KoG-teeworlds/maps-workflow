@@ -3,7 +3,7 @@ rules:
     module: rules.file
     class_name: FileSize
     description: "Check if size is allowed"
-    type: "require"
+    type: require
     params:
       max_file_size: 10MB
     depends_on: []

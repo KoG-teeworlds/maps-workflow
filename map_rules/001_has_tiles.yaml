@@ -3,7 +3,7 @@ rules:
     module: rules.tile
     class_name: Exist
     description: "Check if the map has spawn tiles"
-    type: "require"
+    type: require
     params:
       humanized: "Spawn"
       expected_tile: 192
@@ -15,7 +15,7 @@ rules:
     module: rules.tile
     class_name: Exist
     description: "Check if the map has a start line"
-    type: "require"
+    type: require
     params:
       humanized: "Start"
       expected_tile: 33
@@ -26,7 +26,7 @@ rules:
     module: rules.tile
     class_name: Exist
     description: "Check if the map has a finish line"
-    type: "require"
+    type: require
     params:
       humanized: "Finish"
       expected_tile: 34

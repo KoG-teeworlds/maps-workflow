@@ -3,7 +3,7 @@ rules:
     module: rules.setting
     class_name: Valid
     description: "Check if the map has allowed map settings"
-    type: "require"
+    type: require
     params:
       field: "sv_kog_map_quests"
       type: list

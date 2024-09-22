@@ -3,6 +3,6 @@ rules:
     module: rules.image
     class_name: Valid
     description: "Check if the map has allowed map images"
-    type: "skip"
+    type: skip
     params:
     depends_on: []
