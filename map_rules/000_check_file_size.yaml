@@ -7,3 +7,12 @@ rules:
     params:
       max_file_size: 10MB
     depends_on: []
+
+  - name: check_min_file_size
+    module: rules.file
+    class_name: FileSize
+    description: "Check min file size"
+    type: require
+    params:
+      min_file_size: 1BB
+    depends_on: []

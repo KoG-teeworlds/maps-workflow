@@ -1,3 +1,6 @@
+import json
+
+
 class RuleException(Exception):
     def __init__(self, message):
         super().__init__(message)
@@ -7,3 +10,5 @@ class RuleViolation(Exception):
         super().__init__(message)
         self.errors = errors
 
+    def __json__(self):
+        return json.dumps({})
