@@ -111,22 +111,21 @@ def generate_rules_file():
     config = load_all_rules('map_rules/', exclude=[])
     rule_evaluation = []
     for rule in config['rules']:
-        rule_name = rule['name']
-        rule_desc = rule['description']
-        rule_type = rule['type']
-        r_module = rule['module']
-        r_class = rule['class']
-        params = rule.get('params', {})
+        try:
+            rule = BaseRuleConfig(**rule)
+        except ValidationError as e:
+            print(e)
+            continue
 
-        rule_module = load_rule_from_module(r_module)
+        rule_module = load_rule_from_module(rule.module)
         if not rule_module:
             continue
 
-        rule_func: BaseRule = getattr(rule_module, r_class, None)(None, None, params)
+        rule_func: BaseRule = getattr(rule_module, rule.class_name, None)(None, None, rule.params)
         if not rule_func:
             continue
 
-        rule_evaluation.append({ 'name': rule_name, 'desc': rule_desc, 'explain': rule_func.explain(), 'required': True if rule_type == 'require' else False })
+        rule_evaluation.append({ 'name': rule.name, 'desc': rule.description, 'explain': rule_func.explain(), 'required': True if rule.type == 'require' else False })
     return rule_evaluation
 
 if __name__ == '__main__':
