@@ -128,6 +128,10 @@ def generate_rules_file():
         rule_evaluation.append({ 'name': rule.name, 'desc': rule.description, 'explain': rule_func.explain(), 'required': True if rule.type == 'require' else False })
     return rule_evaluation
 
+
+def ci_main():
+    print("Running from CI")
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("map")

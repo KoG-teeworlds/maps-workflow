@@ -8,6 +8,7 @@ readme = "README.md"
 [tool.poetry.scripts]
 maps-workflow = "maps_workflow.main:main"
 rules-to-json = "maps_workflow.main:generate_rules_file"
+ci = "maps_workflow.main:ci_main"
 
 [tool.poetry.dependencies]
 python = "^3.10"
