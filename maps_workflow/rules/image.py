@@ -29,7 +29,7 @@ class Valid(BaseRule):
                     sha512_hash = hashlib.sha512()
                     sha512_hash.update(image.data.all().tobytes())
 
-                    print("New image")
+                    print(image.name)
                     print(sha512_hash.hexdigest())
                     # TODO: Check hash against known hashes otherwise ask for permission
                 else:

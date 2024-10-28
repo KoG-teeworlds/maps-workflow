@@ -130,6 +130,7 @@ def generate_rules_file():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument("map")
     parser.add_argument("--skip")
     args = parser.parse_args()
 
@@ -141,9 +142,8 @@ if __name__ == '__main__':
             excluded = [args.skip]
 
     config = load_all_rules('map_rules/', exclude=excluded)
-    raw_file = './Aip-Gores.map'
-    tw_map = twmap.Map(raw_file)
-    result = execute_rules(raw_file, tw_map, config)
+    tw_map = twmap.Map(args.map)
+    result = execute_rules(args.map, tw_map, config)
 
     if result:
         print("✅ Workflow completed successfully.")

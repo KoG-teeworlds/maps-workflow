@@ -21,7 +21,7 @@ class FileSize(BaseRule):
 
     def convert_size_to_bytes(self, size_str: str):
         size_str = size_str.strip().upper()
-        units = {"BB": 1024, "KB": 1024**2, "MB": 1024**3, "GB": 1024**4}
+        units = {"BB": 1, "KB": 1024**1, "MB": 1024**2, "GB": 1024**3}
 
         for unit in units:
             if size_str.endswith(unit):
@@ -44,7 +44,7 @@ class FileSize(BaseRule):
         allowed_size = self.convert_size_to_bytes(file_size)
         stat = os.stat(self.raw_file)
         if op(stat.st_size, allowed_size):
-            violations.append(RuleViolation(message=f"The filesize is above the allowed limit of {self.params.max_file_size}.", errors=[stat.st_size, operator, file_size]))
+            violations.append(RuleViolation(message=f"The filesize is above the allowed limit of {allowed_size}.", errors=[stat.st_size, operator, file_size]))
         return violations
     
     def explain(self):
