@@ -30,6 +30,7 @@ runs:
     - name: Install dependencies
       shell: bash
       run: python -m poetry install
+      working-directory: ${{ github.action_path }}
 
     - name: Pass Inputs to Shell
       run: |
@@ -40,3 +41,4 @@ runs:
       id: map-workflow-output
       run: python -m poetry run ci
       shell: bash
+      working-directory: ${{ github.action_path }}
