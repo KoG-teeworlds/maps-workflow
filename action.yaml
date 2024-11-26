@@ -34,11 +34,6 @@ runs:
       run: uv sync --all-extras --dev
       working-directory: ${{ github.action_path }}
 
-    - name: Download artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: maps-files
-
     - name: Get the result
       id: map-workflow-output
       run: |
@@ -47,7 +42,7 @@ runs:
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
             for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
-                uv run maps_workflow/main.py --map $file
+                uv run maps_workflow/main.py --map ${GITHUB_ACTION_PATH}/$file
               fi
             done
       shell: bash
