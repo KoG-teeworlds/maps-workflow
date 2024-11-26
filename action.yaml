@@ -53,7 +53,7 @@ runs:
     - name: Get the result
       id: map-workflow-output
       run: |
-            OUTPUT = ""
+            OUTPUT=""
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
             for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
