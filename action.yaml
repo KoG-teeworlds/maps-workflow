@@ -43,6 +43,8 @@ runs:
 
     - name: Get the result
       id: map-workflow-output
-      run: uv run maps_workflow/main.py
+      run: |
+            uv pip install .
+            uv run maps_workflow/main.py
       shell: bash
       working-directory: ${{ github.action_path }}
