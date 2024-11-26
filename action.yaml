@@ -6,6 +6,14 @@ inputs:
     description: 'The maps to be tested'
     required: true
     default: "Aip-Gores.map"
+   GITHUB_TOKEN:
+       type: string
+       description: Github token passed from calling workflow
+       required: true
+   GITHUB_REPOSITORY:
+       type: string
+       description: Github repository from the from calling workflow
+       required: true
 
 outputs:
   status:
@@ -22,6 +30,8 @@ runs:
 
     - name: "Set up Python"
       uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
 
     - name: Cache the virtualenv
       uses: actions/cache@v4
@@ -31,14 +41,18 @@ runs:
 
     - name: Install the project
       shell: bash
-      run: uv sync --all-extras --dev
+      run: |
+        uv sync --all-extras --dev
       working-directory: ${{ github.action_path }}
+
+    - uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.GITHUB_REPOSITORY }}
+        token: ${{ inputs.GITHUB_TOKEN }}
 
     - name: Get the result
       id: map-workflow-output
       run: |
-            uv pip install .
-            tree .
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
             for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
