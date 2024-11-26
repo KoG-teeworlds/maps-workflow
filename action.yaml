@@ -36,6 +36,7 @@ runs:
 
     - name: Get changed files
       id: changed-files
+      shell: bash
       run: |
         CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
         echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
