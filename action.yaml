@@ -34,12 +34,20 @@ runs:
       run: uv sync --all-extras --dev
       working-directory: ${{ github.action_path }}
 
+      - name: Get changed files
+        id: changed-files
+        run: |
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
+
     - name: Get the result
       id: map-workflow-output
       run: |
             uv pip install .
-            for file in $(find . -type f -name "*.map"); do
-              uv run maps_workflow/main.py --map $file
+            for file in $CHANGED_FILES; do
+              if [[ $file == *.map ]]; then
+                uv run maps_workflow/main.py --map $file
+              fi
             done
       shell: bash
       working-directory: ${{ github.action_path }}
