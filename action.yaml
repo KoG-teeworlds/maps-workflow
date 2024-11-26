@@ -17,7 +17,7 @@ inputs:
 
 outputs:
   status:
-    description: 'Returns a json object with the status'
+    description: 'Returns a markdown string'
     value: ${{ steps.map-workflow-output.outputs.status }}
 
 runs:
@@ -53,11 +53,13 @@ runs:
     - name: Get the result
       id: map-workflow-output
       run: |
+            OUTPUT = ""
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
             for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
-                uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci
+                OUTPUT+=$(uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci)
               fi
             done
+            echo $OUTPUT >> $GITHUB_OUTPUT
       shell: bash
       working-directory: ${{ github.action_path }}

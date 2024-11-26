@@ -1,5 +1,6 @@
 import importlib
 import os
+from pathlib import Path
 import time
 import traceback
 import logging
@@ -161,6 +162,8 @@ if __name__ == '__main__':
     parser.add_argument("--ci", action="store_true")
     args = parser.parse_args()
 
+    file_path = Path(args.map)
+
     excluded = []
     if args.skip:
         if "," in args.skip:
@@ -173,7 +176,9 @@ if __name__ == '__main__':
     tw_map = twmap.Map(args.map)
     result = execute_rules(args.map, tw_map, config)
 
+    # TODO: Add jinja2 support
     if args.ci:
+        print(f"Output for map `{file_path.name}`\n")
         print(result[1])
 
     if result[0]:
