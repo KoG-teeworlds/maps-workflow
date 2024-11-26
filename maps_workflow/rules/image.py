@@ -29,14 +29,14 @@ class Valid(BaseRule):
                     sha512_hash = hashlib.sha512()
                     sha512_hash.update(image.data.all().tobytes())
 
-                    print(image.name)
-                    print(sha512_hash.hexdigest())
+                    #print(image.name)
+                    #print(sha512_hash.hexdigest())
                     # TODO: Check hash against known hashes otherwise ask for permission
                 else:
                     violations.append(RuleViolation(message=f"{image.name} is embedded but has no data.", errors=[image.data.size, ">", 0]))
 
-            if image.is_external():
-                print(f"{image.name} is external, looking it up in mapres")
+            #if image.is_external():
+            #    print(f"{image.name} is external, looking it up in mapres")
 
         return violations
     

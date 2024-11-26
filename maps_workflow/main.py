@@ -2,6 +2,7 @@ import importlib
 import os
 import time
 import traceback
+import logging
 from pydantic import ValidationError
 import twmap
 import argparse
@@ -20,7 +21,7 @@ def load_rule_from_module(rule_name):
         module = importlib.import_module(f"maps_workflow.{rule_name}")
         return module
     except ModuleNotFoundError:
-        print(f"⚠️ Module 'maps_workflow.{rule_name}' not found.")
+        logging.warning(f"⚠️ Module 'maps_workflow.{rule_name}' not found.")
         return None
 
 def load_all_rules(directory='rules/', exclude=[]):
@@ -48,12 +49,12 @@ def execute_rules(raw_file, map_data, config):
         try:
             rule = BaseRuleConfig(**rule)
         except ValidationError as e:
-            print(e)
+            logging.error(e)
             rule_status[rule['name']] = False
             continue
 
         if not all(can_run_rule(dep) for dep in rule.depends_on):
-            print(f"⏭️  Skipping '{rule.name}' due to unmet dependencies.")
+            logging.info(f"⏭️  Skipping '{rule.name}' due to unmet dependencies.")
             rule_status[rule.name] = False
             continue
 
@@ -64,7 +65,7 @@ def execute_rules(raw_file, map_data, config):
 
         rule_func: BaseRule = getattr(rule_module, rule.class_name, None)(raw_file, map_data, rule.params)
         if not rule_func:
-            print(f"⚠️ Rule function '{rule.name}' not found in module '{rule.module}'.")
+            logging.warning(f"⚠️ Rule function '{rule.name}' not found in module '{rule.module}'.")
             rule_status[rule.name] = False
             continue
 
@@ -78,33 +79,32 @@ def execute_rules(raw_file, map_data, config):
             if len(violations) > 0:
                 success = False
                 for violation in violations:
-                    print(f"Violation: {violation}")
+                    logging.info(f"Violation: {violation}")
 
             if success:
-                print(f"✅ Rule '{rule.name}' passed. ({rule_time_elapsed:.2f}s)")
+                logging.info(f"✅ Rule '{rule.name}' passed. ({rule_time_elapsed:.2f}s)")
                 rule_status[rule.name] = True
             else:
                 rule_status[rule.name] = False
                 if rule.type == "require":
-                    print(f"❌ Rule '{rule.name}' failed (REQUIRED). Exiting with error. ({rule_time_elapsed:.2f}s)")
+                    logging.error(f"❌ Rule '{rule.name}' failed (REQUIRED). Exiting with error. ({rule_time_elapsed:.2f}s)")
                     return False
                 elif rule.type == "fail":
-                    print(f"⚠️ Rule '{rule.name}' failed but continuing. ({rule_time_elapsed:.2f}s)")
+                    logging.info(f"⚠️ Rule '{rule.name}' failed but continuing. ({rule_time_elapsed:.2f}s)")
                 elif rule.type == "skip":
-                    print(f"⏭️ Rule '{rule.name}' failed but skipping. ({rule_time_elapsed:.2f}s)")
+                    logging.info(f"⏭️ Rule '{rule.name}' failed but skipping. ({rule_time_elapsed:.2f}s)")
 
         except Exception as e:
             rule_status[rule.name] = False
             if rule.type == "require":
-                print(f"❌ Rule '{rule.name}' encountered an error (REQUIRED). ({rule_time_elapsed:.2f}s) Exiting: {e}")
+                logging.error(f"❌ Rule '{rule.name}' encountered an error (REQUIRED). ({rule_time_elapsed:.2f}s) Exiting: {e}")
                 return False
             elif rule.type == "fail":
-                print(f"⚠️ Rule '{rule.name}' encountered an error ({rule_time_elapsed:.2f}s): {e}")
-                print(traceback.print_exc())
+                logging.error(f"⚠️ Rule '{rule.name}' encountered an error ({rule_time_elapsed:.2f}s): {traceback.print_exc()}")
             elif rule.type == "skip":
-                print(f"⏭️ Rule '{rule.name}' encountered an error but skipping ({rule_time_elapsed:.2f}s): {e}")
+                logging.error(f"⏭️ Rule '{rule.name}' encountered an error but skipping ({rule_time_elapsed:.2f}s): {e}")
 
-    print("🎉 All rules processed successfully.")
+    logging.info("🎉 All rules processed successfully.")
     return True
 
 def generate_rules_file():
@@ -114,7 +114,7 @@ def generate_rules_file():
         try:
             rule = BaseRuleConfig(**rule)
         except ValidationError as e:
-            print(e)
+            logging.error(e)
             continue
 
         rule_module = load_rule_from_module(rule.module)
@@ -128,14 +128,11 @@ def generate_rules_file():
         rule_evaluation.append({ 'name': rule.name, 'desc': rule.description, 'explain': rule_func.explain(), 'required': True if rule.type == 'require' else False })
     return rule_evaluation
 
-
-def ci_main():
-    print("Running from CI")
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--map", default=os.environ.get("INPUT_MAP"))
     parser.add_argument("--skip")
+    parser.add_argument("--ci")
     args = parser.parse_args()
 
     excluded = []
@@ -146,11 +143,11 @@ if __name__ == '__main__':
             excluded = [args.skip]
 
     config = load_all_rules('map_rules/', exclude=excluded)
-    print(f"Processing file: {args.map}")
+    logging.info(f"Processing file: {args.map}")
     tw_map = twmap.Map(args.map)
     result = execute_rules(args.map, tw_map, config)
 
     if result:
-        print("✅ Workflow completed successfully.")
+        logging.info("✅ Workflow completed successfully.")
     else:
-        print("❌ Workflow failed due to required rule failure.")
+        logging.error("❌ Workflow failed due to required rule failure.")
