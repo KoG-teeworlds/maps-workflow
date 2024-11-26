@@ -56,8 +56,9 @@ runs:
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
             for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
-                echo "status=$(uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci)" >> $GITHUB_STEP_SUMMARY
+                echo "$(uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci)" >> $GITHUB_STEP_SUMMARY
               fi
             done
+            echo "status=$(cat $GITHUB_STEP_SUMMARY)" >> $GITHUB_OUTPUT
       shell: bash
       working-directory: ${{ github.action_path }}

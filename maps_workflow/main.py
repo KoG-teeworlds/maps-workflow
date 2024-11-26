@@ -179,7 +179,7 @@ if __name__ == '__main__':
 
     # TODO: Add jinja2 support
     if args.ci:
-        print(f"Output for map `{file_path.name}`\n")
+        print(f"## Output for map `{file_path.name}`\n")
         print(result[1])
 
     if result[0]:
