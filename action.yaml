@@ -38,6 +38,7 @@ runs:
       id: map-workflow-output
       run: |
             uv pip install .
+            tree .
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
             for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
