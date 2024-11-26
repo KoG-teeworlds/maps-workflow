@@ -53,13 +53,11 @@ runs:
     - name: Get the result
       id: map-workflow-output
       run: |
-            OUTPUT=""
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
             for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
-                OUTPUT+=$(uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci)
+                uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci >> $GITHUB_OUTPUT
               fi
             done
-            echo $OUTPUT >> $GITHUB_OUTPUT
       shell: bash
       working-directory: ${{ github.action_path }}
