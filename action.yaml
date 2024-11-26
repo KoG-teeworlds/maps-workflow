@@ -7,13 +7,13 @@ inputs:
     required: true
     default: "Aip-Gores.map"
    GITHUB_TOKEN:
-       type: string
-       description: Github token passed from calling workflow
-       required: true
+    type: string
+    description: Github token passed from calling workflow
+    required: true
    GITHUB_REPOSITORY:
-       type: string
-       description: Github repository from the from calling workflow
-       required: true
+    type: string
+    description: Github repository from the from calling workflow
+    required: true
 
 outputs:
   status:
