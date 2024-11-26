@@ -27,13 +27,14 @@ runs:
         key: ${{ runner.os }}-venv-${{ hashFiles('**/uv.lock') }}
 
     - name: Install the project
+      shell: bash
       run: uv sync --all-extras --dev
       working-directory: ${{ github.action_path }}
 
     - name: Pass Inputs to Shell
-      run: |
-              echo "INPUT_MAP=${{ inputs.map }}" >> $GITHUB_ENV
       shell: bash
+      run: |
+            echo "INPUT_MAP=${{ inputs.map }}" >> $GITHUB_ENV
 
     - name: Get the result
       id: map-workflow-output
