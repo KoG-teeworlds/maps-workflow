@@ -146,6 +146,7 @@ if __name__ == '__main__':
             excluded = [args.skip]
 
     config = load_all_rules('map_rules/', exclude=excluded)
+    print(f"Processing file: {args.map}")
     tw_map = twmap.Map(args.map)
     result = execute_rules(args.map, tw_map, config)
 
