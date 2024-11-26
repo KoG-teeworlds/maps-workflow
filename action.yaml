@@ -2,10 +2,10 @@ name: 'KoG Map Workflow'
 description: 'The official KoG maps workflow'
 
 inputs:
-  map:
-    description: 'The map to be tested'
+  maps:
+    description: 'The maps to be tested'
     required: true
-    default: "Aip-Gores"
+    default: "Aip-Gores.map"
 
 outputs:
   status:
@@ -38,7 +38,7 @@ runs:
       id: map-workflow-output
       run: |
             uv pip install .
-            for file in $(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}); do
+            for file in ${{ inputs.maps }}; do
               if [[ $file == *.map ]]; then
                 uv run maps_workflow/main.py --map $file
               fi
