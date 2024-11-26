@@ -50,4 +50,8 @@ class Valid(BaseRule):
         return violations
 
     def explain(self):
-        return ["setting", "in", None]
+        if hasattr(self.map_file.info.settings, self.params.field):
+            value = getattr(self.map_file.info.settings, self.params.field)
+            return f"Setting '{value}' in '{self.params.field}' is not a valid option"
+        else:
+            return f"Setting '{self.params.field}' is not set"

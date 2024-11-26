@@ -1,5 +1,5 @@
 rules:
-  - name: check_allowed_file_size
+  - name: Check max allowed file size
     module: rules.file
     class_name: FileSize
     description: "Check if size is allowed"
@@ -8,11 +8,11 @@ rules:
       max_file_size: 10MB
     depends_on: []
 
-  - name: check_min_file_size
+  - name: Check min allowed file size
     module: rules.file
     class_name: FileSize
     description: "Check min file size"
     type: require
     params:
-      min_file_size: 1BB
+      min_file_size: 1Byte
     depends_on: []

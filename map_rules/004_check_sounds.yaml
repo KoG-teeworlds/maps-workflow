@@ -1,5 +1,5 @@
 rules:
-  - name: check_if_valid_sounds
+  - name: Check if sounds are valid
     description: "Check if the map has allowed map settings"
     module: rules.sound
     class_name: Valid

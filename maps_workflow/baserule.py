@@ -1,4 +1,5 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
+from enum import Enum
 from pydantic import BaseModel
 import twmap
 
@@ -21,7 +22,7 @@ class BaseRule():
     def evaluate(self):
         raise NotImplemented
 
-    def explain(self):
+    def explain(self) -> str:
         raise NotImplemented
 
 
@@ -33,3 +34,19 @@ class BaseRuleConfig(BaseModel):
     type: str
     depends_on: List[str]
     params: Dict | None
+
+
+class Status(Enum):
+    FAILED = 0
+    COMPLETED = 1
+    WARN = 2
+    SKIP = 3
+
+
+class RuleStatus(BaseModel):
+    status: Status
+    explain: Optional[str]
+    rule: Optional["BaseRuleConfig"] = None
+
+    class Config:
+        arbitrary_types_allowed = True

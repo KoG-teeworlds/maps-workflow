@@ -21,13 +21,13 @@ class FileSize(BaseRule):
 
     def convert_size_to_bytes(self, size_str: str):
         size_str = size_str.strip().upper()
-        units = {"BB": 1, "KB": 1024**1, "MB": 1024**2, "GB": 1024**3}
+        units = {"BYTE": 1, "KB": 1024**1, "MB": 1024**2, "GB": 1024**3}
 
         for unit in units:
             if size_str.endswith(unit):
                 return float(size_str[:-len(unit)]) * units[unit]
         
-        raise ValueError("Unknown size unit. Please use B, KB, MB or GB.")
+        raise ValueError("Unknown size unit. Please use Byte, KB, MB or GB.")
 
     def evaluate(self):
         violations = []
@@ -48,4 +48,14 @@ class FileSize(BaseRule):
         return violations
     
     def explain(self):
-        return ["file_size", ">", self.params.max_file_size]
+        file_size = None
+        op = None
+
+        if self.params.max_file_size:
+            file_size = self.params.max_file_size
+            op = "is not more than"
+        elif self.params.min_file_size:
+            file_size = self.params.min_file_size
+            op = "is not less than"
+
+        return f"File {op} {file_size}"

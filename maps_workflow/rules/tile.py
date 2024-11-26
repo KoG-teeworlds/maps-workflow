@@ -56,4 +56,4 @@ class Exist(BaseRule):
         return violations
     
     def explain(self):
-        return [f"Check if map has tile \"{self.params.humanized}\" ({self.params.expected_tile})"]
+        return f"Check if map has tile \"{self.params.humanized}\" (TileID: {self.params.expected_tile})"

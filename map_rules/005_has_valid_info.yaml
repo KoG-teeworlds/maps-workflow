@@ -1,5 +1,5 @@
 rules:
-  - name: check_if_valid_info
+  - name: Check if map has a license
     description: "Check if the map has allowed map settings"
     module: rules.meta
     class_name: Valid
@@ -11,7 +11,7 @@ rules:
         - MIT
     depends_on: []
 
-  - name: check_if_author_is_valid
+  - name: Check if map has an author
     description: "Check if the map author is valid"
     module: rules.meta
     class_name: Valid

@@ -1,5 +1,5 @@
 rules:
-  - name: check_if_contains_allowed_map_settings
+  - name: Check if map has `sv_kog_map_quests`
     module: rules.setting
     class_name: Valid
     description: "Check if the map has allowed map settings"

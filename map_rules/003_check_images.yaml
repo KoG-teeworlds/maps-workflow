@@ -1,5 +1,5 @@
 rules:
-  - name: check_if_valid_images
+  - name: Check if images are valid
     module: rules.image
     class_name: Valid
     description: "Check if the map has allowed map images"

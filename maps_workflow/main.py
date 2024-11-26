@@ -9,7 +9,7 @@ import argparse
 from ruamel.yaml import YAML
 import types
 
-from maps_workflow.baserule import BaseRule, BaseRuleConfig
+from maps_workflow.baserule import BaseRule, BaseRuleConfig, RuleStatus, Status
 
 
 def load_rules_from_file(file_path):
@@ -37,8 +37,8 @@ def load_all_rules(directory='rules/', exclude=[]):
             all_rules['rules'].extend(rules['rules'])
     return all_rules
 
-def execute_rules(raw_file, map_data, config):
-    rule_status = {}
+def execute_rules(raw_file, map_data, config) -> tuple[bool, str]:
+    rule_status: dict[str, RuleStatus] = {}
 
     def can_run_rule(rule_name):
         """Check if the rule can run based on its dependencies."""
@@ -47,28 +47,34 @@ def execute_rules(raw_file, map_data, config):
         return rule_status[rule_name]
 
     for rule in config['rules']:
+        current_rule_status = RuleStatus(explain=None, status=Status.FAILED)
         try:
             rule = BaseRuleConfig(**rule)
         except ValidationError as e:
             logging.error(e)
-            rule_status[rule['name']] = False
+            rule = BaseRuleConfig({'name': rule['name']})
             continue
+
+        rule_status[rule.name] = current_rule_status
+        current_rule_status.rule = rule
 
         if not all(can_run_rule(dep) for dep in rule.depends_on):
             logging.info(f"⏭️  Skipping '{rule.name}' due to unmet dependencies.")
-            rule_status[rule.name] = False
+            current_rule_status.passed = Status.FAILED
             continue
 
         rule_module = load_rule_from_module(rule.module)
         if not rule_module:
-            rule_status[rule.name] = False
+            current_rule_status.passed = Status.FAILED
             continue
 
         rule_func: BaseRule|None = getattr(rule_module, rule.class_name, None)(raw_file, map_data, rule.params)
         if not rule_func:
             logging.warning(f"⚠️ Rule function '{rule.name}' not found in module '{rule.module}'.")
-            rule_status[rule.name] = False
+            current_rule_status.passed = Status.WARN
             continue
+
+        current_rule_status.explain = rule_func.explain()
 
         rule_time_started = time.time()
         try:
@@ -84,31 +90,47 @@ def execute_rules(raw_file, map_data, config):
 
             if success:
                 logging.info(f"✅ Rule '{rule.name}' passed. ({rule_time_elapsed:.2f}s)")
-                rule_status[rule.name] = True
+                current_rule_status.status = Status.COMPLETED
             else:
-                rule_status[rule.name] = False
                 if rule.type == "require":
+                    current_rule_status.status = Status.FAILED
                     logging.error(f"❌ Rule '{rule.name}' failed (REQUIRED). Exiting with error. ({rule_time_elapsed:.2f}s)")
                     return False
                 elif rule.type == "fail":
+                    current_rule_status.status = Status.WARN
                     logging.info(f"⚠️ Rule '{rule.name}' failed but continuing. ({rule_time_elapsed:.2f}s)")
                 elif rule.type == "skip":
+                    current_rule_status.status = Status.SKIP
                     logging.info(f"⏭️ Rule '{rule.name}' failed but skipping. ({rule_time_elapsed:.2f}s)")
 
         except Exception as e:
             rule_time_finished = time.time()
             rule_time_elapsed: float = rule_time_finished - rule_time_started
-            rule_status[rule.name] = False
             if rule.type == "require":
+                current_rule_status.status = Status.FAILED
                 logging.error(f"❌ Rule '{rule.name}' encountered an error (REQUIRED). ({rule_time_elapsed:.2f}s) Exiting: {e}")
-                return False
+                return False, "❌ Check failed."
             elif rule.type == "fail":
+                current_rule_status.status = Status.WARN
                 logging.error(f"⚠️ Rule '{rule.name}' encountered an error ({rule_time_elapsed:.2f}s): {traceback.print_exc()}")
             elif rule.type == "skip":
+                current_rule_status.status = Status.SKIP
                 logging.error(f"⏭️ Rule '{rule.name}' encountered an error but skipping ({rule_time_elapsed:.2f}s): {e}")
 
+    result_string = "|Status|Rule|Explanation|\n"
+    result_string += "|---|---|---|\n"
+    for passed in rule_status:
+        rule = rule_status[passed]
+        status_symbol = {
+            Status.COMPLETED: "✅",
+            Status.FAILED: "❌",
+            Status.WARN: "⚠️",
+            Status.SKIP: "⏭️"
+        }
+        result_string += f"| { status_symbol.get(rule.status, '❌') } | {rule.rule.name} | { rule.explain if rule.status != Status.COMPLETED else '-' } |\n"
+
     logging.info("🎉 All rules processed successfully.")
-    return True
+    return True, result_string
 
 def generate_rules_file():
     config = load_all_rules('map_rules/', exclude=[])
@@ -131,11 +153,12 @@ def generate_rules_file():
         rule_evaluation.append({ 'name': rule.name, 'desc': rule.description, 'explain': rule_func.explain(), 'required': True if rule.type == 'require' else False })
     return rule_evaluation
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--map", default=os.environ.get("INPUT_MAP"))
     parser.add_argument("--skip")
-    parser.add_argument("--ci")
+    parser.add_argument("--ci", action="store_true")
     args = parser.parse_args()
 
     excluded = []
@@ -150,7 +173,10 @@ if __name__ == '__main__':
     tw_map = twmap.Map(args.map)
     result = execute_rules(args.map, tw_map, config)
 
-    if result:
+    if args.ci:
+        print(result[1])
+
+    if result[0]:
         logging.info("✅ Workflow completed successfully.")
     else:
         logging.error("❌ Workflow failed due to required rule failure.")
