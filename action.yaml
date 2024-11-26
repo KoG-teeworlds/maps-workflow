@@ -1,17 +1,23 @@
 name: 'KoG Map Workflow'
 description: 'The official KoG maps workflow'
+
 inputs:
   map:
     description: 'The map to be tested'
     required: true
     default: "Aip-Gores"
+
 outputs:
   status:
     description: 'Returns a json object with the status'
     value: ${{ steps.map-workflow-output.outputs.status }}
+
 runs:
   using: 'composite'
+  runs-on: ubuntu-latest
   steps:
+    - uses: actions/checkout@v4
+
     - name: Install uv
       uses: astral-sh/setup-uv@v3
 
