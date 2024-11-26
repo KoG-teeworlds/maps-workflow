@@ -134,7 +134,7 @@ def ci_main():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("map")
+    parser.add_argument("--map", default=os.environ.get("INPUT_MAP"))
     parser.add_argument("--skip")
     args = parser.parse_args()
 

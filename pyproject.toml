@@ -1,23 +1,12 @@
-[tool.poetry]
-name = "maps_workflow"
+[project]
+name = "maps-workflow"
 version = "0.1.0"
-description = ""
-authors = ["Avolicious <avolicious@kog.tw>"]
+description = "Add your description here"
 readme = "README.md"
-
-[tool.poetry.scripts]
-maps-workflow = "maps_workflow.main:main"
-rules-to-json = "maps_workflow.main:generate_rules_file"
-ci = "maps_workflow.main:ci_main"
-
-[tool.poetry.dependencies]
-python = "^3.10"
-twmap = "^0.6.1"
-numpy = "^2.1.1"
-ruamel-yaml = "^0.18.6"
-pydantic = "^2.9.2"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.1.3",
+    "pydantic>=2.10.1",
+    "ruamel-yaml>=0.18.6",
+    "twmap>=0.6.2",
+]
