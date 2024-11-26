@@ -43,6 +43,6 @@ runs:
 
     - name: Get the result
       id: map-workflow-output
-      run: python -m poetry run ci
+      run: uv run maps_workflow/main.py
       shell: bash
       working-directory: ${{ github.action_path }}
