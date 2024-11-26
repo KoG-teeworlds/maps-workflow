@@ -34,11 +34,11 @@ runs:
       run: uv sync --all-extras --dev
       working-directory: ${{ github.action_path }}
 
-      - name: Get changed files
-        id: changed-files
-        run: |
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
-          echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
+    - name: Get changed files
+      id: changed-files
+      run: |
+        CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+        echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
 
     - name: Get the result
       id: map-workflow-output
