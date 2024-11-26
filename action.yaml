@@ -57,7 +57,7 @@ runs:
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
             for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
-                uv run maps_workflow/main.py --map $file
+                uv run maps_workflow/main.py --map ${{ github.workspace }}$file
               fi
             done
       shell: bash
