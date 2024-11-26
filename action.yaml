@@ -60,7 +60,9 @@ runs:
               fi
             done
             {
-              echo "status=$(cat $GITHUB_STEP_SUMMARY)" | sed 's/|/\\|/g' >> $GITHUB_OUTPUT
-            }
+              echo "status<<EOF"
+              echo "$(cat $GITHUB_STEP_SUMMARY)"
+              echo "EOF";
+            } >> $GITHUB_OUTPUT
       shell: bash
       working-directory: ${{ github.action_path }}
