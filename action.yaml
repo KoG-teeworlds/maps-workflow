@@ -34,6 +34,11 @@ runs:
       run: uv sync --all-extras --dev
       working-directory: ${{ github.action_path }}
 
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: maps-files
+
     - name: Get the result
       id: map-workflow-output
       run: |
