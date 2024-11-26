@@ -59,6 +59,8 @@ runs:
                 echo "$(uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci)" >> $GITHUB_STEP_SUMMARY
               fi
             done
-            echo "status=$(cat $GITHUB_STEP_SUMMARY)" >> $GITHUB_OUTPUT
+            {
+              echo "status=$(cat $GITHUB_STEP_SUMMARY)" >> $GITHUB_OUTPUT
+            }
       shell: bash
       working-directory: ${{ github.action_path }}
