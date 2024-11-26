@@ -7,6 +7,7 @@ from pydantic import ValidationError
 import twmap
 import argparse
 from ruamel.yaml import YAML
+import types
 
 from maps_workflow.baserule import BaseRule, BaseRuleConfig
 
@@ -16,7 +17,7 @@ def load_rules_from_file(file_path):
         yaml = YAML()
         return yaml.load(file)
 
-def load_rule_from_module(rule_name):
+def load_rule_from_module(rule_name) -> types.ModuleType | None:
     try:
         module = importlib.import_module(f"maps_workflow.{rule_name}")
         return module
@@ -63,17 +64,17 @@ def execute_rules(raw_file, map_data, config):
             rule_status[rule.name] = False
             continue
 
-        rule_func: BaseRule = getattr(rule_module, rule.class_name, None)(raw_file, map_data, rule.params)
+        rule_func: BaseRule|None = getattr(rule_module, rule.class_name, None)(raw_file, map_data, rule.params)
         if not rule_func:
             logging.warning(f"⚠️ Rule function '{rule.name}' not found in module '{rule.module}'.")
             rule_status[rule.name] = False
             continue
 
+        rule_time_started = time.time()
         try:
-            rule_time_started = time.time()
             violations = rule_func.evaluate()
             rule_time_finished = time.time()
-            rule_time_elapsed = rule_time_finished - rule_time_started
+            rule_time_elapsed: float = rule_time_finished - rule_time_started
 
             success = True
             if len(violations) > 0:
@@ -95,6 +96,8 @@ def execute_rules(raw_file, map_data, config):
                     logging.info(f"⏭️ Rule '{rule.name}' failed but skipping. ({rule_time_elapsed:.2f}s)")
 
         except Exception as e:
+            rule_time_finished = time.time()
+            rule_time_elapsed: float = rule_time_finished - rule_time_started
             rule_status[rule.name] = False
             if rule.type == "require":
                 logging.error(f"❌ Rule '{rule.name}' encountered an error (REQUIRED). ({rule_time_elapsed:.2f}s) Exiting: {e}")
