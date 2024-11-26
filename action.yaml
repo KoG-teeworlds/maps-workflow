@@ -38,7 +38,8 @@ runs:
       id: map-workflow-output
       run: |
             uv pip install .
-            for file in ${{ inputs.maps }}; do
+            IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
+            for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
                 uv run maps_workflow/main.py --map $file
               fi
