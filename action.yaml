@@ -53,10 +53,11 @@ runs:
     - name: Get the result
       id: map-workflow-output
       run: |
+            tree .
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
             for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
-                uv run maps_workflow/main.py --map ${GITHUB_ACTION_PATH}/$file
+                uv run maps_workflow/main.py --map $file
               fi
             done
       shell: bash
