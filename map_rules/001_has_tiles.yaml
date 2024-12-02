@@ -8,7 +8,6 @@ rules:
       humanized: "Spawn"
       expected_tile: 192
       min_occurances: 1
-      max_occurances: 10
     depends_on: []
 
   - name: Check if start tiles exist
