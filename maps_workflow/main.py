@@ -185,6 +185,7 @@ if __name__ == '__main__':
             if args.ci:
                 output.append(f"## Output for map `{file_path.name}`")
                 output.append(f"### Rules\n{result[1]}")
+                output.append(result[1])
 
             if result[0]:
                 output.append("✅ Workflow completed successfully.")
