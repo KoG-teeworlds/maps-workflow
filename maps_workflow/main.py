@@ -161,28 +161,35 @@ if __name__ == '__main__':
     parser.add_argument("--map", default=os.environ.get("INPUT_MAP"))
     parser.add_argument("--skip")
     parser.add_argument("--ci", action="store_true")
+    parser.add_argument("--action", default=os.environ.get("ACTION", "check"))
     args = parser.parse_args()
 
     file_path = Path(args.map)
-
-    excluded = []
-    if args.skip:
-        if "," in args.skip:
-            excluded = args.skip.split(",")
-        else:
-            excluded = [args.skip]
-
-    config = load_all_rules('map_rules/', exclude=excluded)
     logging.info(f"Processing file: {args.map}")
-    tw_map = twmap.Map(args.map)
-    result = execute_rules(args.map, tw_map, config)
 
-    # TODO: Add jinja2 support
-    if args.ci:
-        print(f"## Output for map `{file_path.name}`\n")
-        print(result[1])
+    if args.action == "check":
+        excluded = []
+        if args.skip:
+            if "," in args.skip:
+                excluded = args.skip.split(",")
+            else:
+                excluded = [args.skip]
 
-    if result[0]:
-        logging.info("✅ Workflow completed successfully.")
-    else:
-        logging.error("❌ Workflow failed due to required rule failure.")
+        config = load_all_rules('map_rules/', exclude=excluded)
+        tw_map = twmap.Map(args.map)
+        result = execute_rules(args.map, tw_map, config)
+
+        # TODO: Add jinja2 support
+        if args.ci:
+            print(f"## Output for map `{file_path.name}`\n")
+            print(f"### Rules\n")
+            print(result[1])
+
+        if result[0]:
+            logging.info("✅ Workflow completed successfully.")
+        else:
+            logging.error("❌ Workflow failed due to required rule failure.")
+    elif args.action == "optimize":
+        pass
+    elif args.action == "generate_votes":
+        print("Generating votes... please wait")

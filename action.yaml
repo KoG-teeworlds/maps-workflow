@@ -14,6 +14,11 @@ inputs:
     type: string
     description: Github repository from the from calling workflow
     required: true
+  action:
+    description: 'Which action to run'
+    type: string
+    required: false
+    default: "check"
 
 outputs:
   status:
@@ -54,11 +59,24 @@ runs:
       id: map-workflow-output
       run: |
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
-            for file in "${FILES[@]}"; do
-              if [[ $file == *.map ]]; then
-                echo "$(uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci)" >> $GITHUB_STEP_SUMMARY
-              fi
-            done
+            case ${{ inputs.action }} in
+              check)
+                  for file in "${FILES[@]}"; do
+                    if [[ $file == *.map ]]; then
+                      echo "$(uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci)" >> $GITHUB_STEP_SUMMARY
+                    fi
+                  done
+                ;;
+
+              generate-votes)
+                uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --action generate_votes
+              ;;
+
+              *)
+                echo "Invalid action defined!"
+                ;;
+            esac
+
             {
               echo "status<<EOF"
               echo "$(cat $GITHUB_STEP_SUMMARY)"
