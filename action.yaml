@@ -71,6 +71,7 @@ runs:
                 if [ $? -ne 0 ]; then
                   overall_status=1
                 fi
+              fi
             done
             ;;
 
@@ -90,12 +91,11 @@ runs:
             ;;
         esac
 
-        # Add the summary to the outputs
         echo "status<<EOF" >> $GITHUB_OUTPUT
         cat $GITHUB_STEP_SUMMARY >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
         # Exit with the overall status
-        #exit $overall_status
+        # exit $overall_status
       shell: bash
       working-directory: ${{ github.action_path }}
