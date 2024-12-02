@@ -167,35 +167,43 @@ if __name__ == '__main__':
     parser.add_argument("--mapscsv")
     args = parser.parse_args()
 
-    if args.action == "check":
-        file_path = Path(args.map)
-        logging.info(f"Processing file: {args.map}")
-        excluded = []
-        if args.skip:
-            if "," in args.skip:
-                excluded = args.skip.split(",")
+    output = []  # Collect all output messages
+    exit_code = 0  # Track exit code
+
+    try:
+        if args.action == "check":
+            file_path = Path(args.map)
+            output.append(f"Processing file: {args.map}")
+            excluded = []
+            if args.skip:
+                excluded = args.skip.split(",") if "," in args.skip else [args.skip]
+
+            config = load_all_rules('map_rules/', exclude=excluded)
+            tw_map = twmap.Map(args.map)
+            result = execute_rules(args.map, tw_map, config)
+
+            if args.ci:
+                output.append(f"## Output for map `{file_path.name}`")
+                output.append(f"### Rules\n{result[1]}")
+
+            if result[0]:
+                output.append("✅ Workflow completed successfully.")
             else:
-                excluded = [args.skip]
+                output.append("❌ Workflow failed due to required rule failure.")
+                exit_code = 1
 
-        config = load_all_rules('map_rules/', exclude=excluded)
-        tw_map = twmap.Map(args.map)
-        result = execute_rules(args.map, tw_map, config)
-
-        # TODO: Add jinja2 support
-        if args.ci:
-            print(f"## Output for map `{file_path.name}`\n")
-            print(f"### Rules\n")
-            print(result[1])
-
-        if result[0]:
-            logging.info("✅ Workflow completed successfully.")
-            sys.exit(0)
+        elif args.action == "generate_votes":
+            output.append("Generating votes... please wait")
+        elif args.action == "check_if_vote_exists":
+            output.append(f"Reading {args.mapscsv} ...")
         else:
-            logging.error("❌ Workflow failed due to required rule failure.")
-            sys.exit(1)
-    elif args.action == "optimize":
-        pass
-    elif args.action == "generate_votes":
-        print("Generating votes... please wait")
-    elif args.action == "check_if_vote_exists":
-        print(f"Reading {args.mapscsv} ...")
+            output.append("❌ Invalid action defined!")
+            exit_code = 1
+
+    except Exception as e:
+        output.append(f"❌ Unexpected error: {str(e)}")
+        exit_code = 1
+    finally:
+        for line in output:
+            print(line)
+        sys.exit(exit_code)
