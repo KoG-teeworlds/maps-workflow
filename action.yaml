@@ -68,7 +68,7 @@ runs:
                   done
                 ;;
 
-              generate-votes)
+              generate_votes)
                 uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --action generate_votes
               ;;
 
