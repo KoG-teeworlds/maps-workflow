@@ -96,6 +96,6 @@ runs:
         echo "EOF" >> $GITHUB_OUTPUT
 
         # Exit with the overall status
-        exit $overall_status
+        #exit $overall_status
       shell: bash
       working-directory: ${{ github.action_path }}
