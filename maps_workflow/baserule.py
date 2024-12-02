@@ -47,6 +47,7 @@ class RuleStatus(BaseModel):
     status: Status
     explain: Optional[str]
     rule: Optional["BaseRuleConfig"] = None
+    violations: list
 
     class Config:
         arbitrary_types_allowed = True

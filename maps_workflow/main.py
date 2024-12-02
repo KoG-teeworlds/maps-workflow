@@ -49,7 +49,7 @@ def execute_rules(raw_file, map_data, config) -> tuple[bool, str]:
         return rule_status[rule_name]
 
     for rule in config['rules']:
-        current_rule_status = RuleStatus(explain=None, status=Status.FAILED)
+        current_rule_status = RuleStatus(explain=None, status=Status.FAILED, violations=[])
         try:
             rule = BaseRuleConfig(**rule)
         except ValidationError as e:
@@ -87,6 +87,7 @@ def execute_rules(raw_file, map_data, config) -> tuple[bool, str]:
             success = True
             if len(violations) > 0:
                 success = False
+                current_rule_status.violations = violations
                 for violation in violations:
                     logging.info(f"Violation: {violation}")
 
@@ -129,7 +130,7 @@ def execute_rules(raw_file, map_data, config) -> tuple[bool, str]:
             Status.WARN: "⚠️",
             Status.SKIP: "⏭️"
         }
-        result_string += f"| { status_symbol.get(rule.status, '❌') } | {rule.rule.name} | { rule.explain if rule.status != Status.COMPLETED else '-' } |\n"
+        result_string += f"| { status_symbol.get(rule.status, '❌') } | {rule.rule.name} | { rule.explain if rule.status != Status.COMPLETED else '-' }{ "\n" if len(rule.violations) > 0 else "" }{ "\n".join([f"- {r}" for r in rule.violations]) } |\n"
 
     logging.info("🎉 All rules processed successfully.")
     return True, result_string
