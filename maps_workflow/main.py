@@ -121,8 +121,7 @@ def execute_rules(raw_file, map_data, config) -> tuple[bool, str]:
                 current_rule_status.status = Status.SKIP
                 logging.error(f"⏭️ Rule '{rule.name}' encountered an error but skipping ({rule_time_elapsed:.2f}s): {e}")
 
-    result_string = "| Status | Rule | Explanation |\n"
-    result_string += "|---|---|---|\n"
+    result_string = ""
     for passed in rule_status:
         rule = rule_status[passed]
         status_symbol = {
@@ -131,7 +130,11 @@ def execute_rules(raw_file, map_data, config) -> tuple[bool, str]:
             Status.WARN: "⚠️",
             Status.SKIP: "⏭️"
         }
-        result_string += f"| { status_symbol.get(rule.status, '❌') } | {rule.rule.name} | { rule.explain if rule.status != Status.COMPLETED else '-' }{ "\n" if len(rule.violations) > 0 else "" }{ "\n".join([f"- {r}" for r in rule.violations]) } |\n"
+        result_string += f"""#### { status_symbol.get(rule.status, '❌') } {rule.rule.name}\n\n
+        **Explanation**: { rule.explain if rule.status != Status.COMPLETED else '-' }\n
+        **Violations**: { "\n" if len(rule.violations) > 0 else "" }
+        { "\n".join([f"- {r}" for r in rule.violations]) }
+        """
 
     logging.info("🎉 All rules processed successfully.")
     return True, result_string
