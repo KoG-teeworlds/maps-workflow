@@ -77,7 +77,8 @@ runs:
               ;;
 
               *)
-                echo "Invalid action defined!"
+                echo "Invalid action defined!" >> $GITHUB_STEP_SUMMARY
+                exit 1;
                 ;;
             esac
 
@@ -86,5 +87,9 @@ runs:
               echo "$(cat $GITHUB_STEP_SUMMARY)"
               echo "EOF";
             } >> $GITHUB_OUTPUT
+
+            if [ -v MAPS_WORKFLOW_FAILED ]; then
+              exit 1;
+            fi
       shell: bash
       working-directory: ${{ github.action_path }}
