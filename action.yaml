@@ -91,9 +91,11 @@ runs:
             ;;
         esac
 
-        echo "status<<EOF" >> $GITHUB_OUTPUT
-        cat $GITHUB_STEP_SUMMARY >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        {
+          echo "status<<EOF"
+          echo "$(cat $GITHUB_STEP_SUMMARY)"
+          echo "EOF";
+        } >> $GITHUB_OUTPUT
 
         # Exit with the overall status
         # exit $overall_status
