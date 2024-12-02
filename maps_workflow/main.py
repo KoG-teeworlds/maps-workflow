@@ -207,4 +207,3 @@ if __name__ == '__main__':
     finally:
         for line in output:
             print(line)
-        sys.exit(exit_code)
