@@ -63,8 +63,7 @@ runs:
               check)
                   for file in "${FILES[@]}"; do
                     if [[ $file == *.map ]]; then
-                      $OUTPUT=$(uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci --action check)
-                      echo $OUTPUT >> $GITHUB_STEP_SUMMARY
+                      uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci --action check >> $GITHUB_STEP_SUMMARY
                     fi
                   done
                 ;;
