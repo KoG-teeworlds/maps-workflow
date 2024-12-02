@@ -88,6 +88,7 @@ runs:
               echo "EOF";
             } >> $GITHUB_OUTPUT
 
+            echo $MAPS_WORKFLOW_FAILED
             if [ -v MAPS_WORKFLOW_FAILED ]; then
               exit 1;
             fi
