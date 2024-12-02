@@ -1,6 +1,7 @@
 import importlib
 import os
 from pathlib import Path
+import sys
 import time
 import traceback
 import logging
@@ -188,8 +189,10 @@ if __name__ == '__main__':
 
         if result[0]:
             logging.info("✅ Workflow completed successfully.")
+            sys.exit(0)
         else:
             logging.error("❌ Workflow failed due to required rule failure.")
+            sys.exit(1)
     elif args.action == "optimize":
         pass
     elif args.action == "generate_votes":
