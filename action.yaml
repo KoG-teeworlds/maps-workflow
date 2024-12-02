@@ -66,21 +66,14 @@ runs:
           check)
             for file in "${FILES[@]}"; do
               if [[ $file == *.map ]]; then
-                echo "Processing file: $file" >> $GITHUB_STEP_SUMMARY
                 uv run maps_workflow/main.py --ci --action check --map ${{ github.workspace }}/$file >> $GITHUB_STEP_SUMMARY 2>&1
 
                 if [ $? -ne 0 ]; then
-                  echo "❌ Failed on file: $file" >> $GITHUB_STEP_SUMMARY
                   overall_status=1
-                else
-                  echo "✅ Passed for file: $file" >> $GITHUB_STEP_SUMMARY
                 fi
-              else
-                echo "⚠️ Skipping invalid map file: $file" >> $GITHUB_STEP_SUMMARY
-              fi
             done
             ;;
-          
+
           generate_votes)
             uv run maps_workflow/main.py --ci --action generate_votes --map ${{ github.workspace }}/$file >> $GITHUB_STEP_SUMMARY 2>&1
             overall_status=$?
