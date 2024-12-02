@@ -58,44 +58,51 @@ runs:
     - name: Get the result
       id: map-workflow-output
       run: |
-            IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
-            status=0
-            case ${{ inputs.action }} in
-              check)
-                  for file in "${FILES[@]}"; do
-                    if [[ $file == *.map ]]; then
-                      uv run maps_workflow/main.py --ci --action check --map ${{ github.workspace }}/$file >> $GITHUB_STEP_SUMMARY
+        IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
+        overall_status=0
+        status_message=""
+        
+        case ${{ inputs.action }} in
+          check)
+            for file in "${FILES[@]}"; do
+              if [[ $file == *.map ]]; then
+                echo "Processing file: $file" >> $GITHUB_STEP_SUMMARY
+                uv run maps_workflow/main.py --ci --action check --map ${{ github.workspace }}/$file >> $GITHUB_STEP_SUMMARY 2>&1
 
-                      # Check if failed, then set it
-                      if [ $? != 0 ]; then
-                        status=$?
-                      fi
-                    fi
-                  done
-                ;;
+                if [ $? -ne 0 ]; then
+                  echo "❌ Failed on file: $file" >> $GITHUB_STEP_SUMMARY
+                  overall_status=1
+                else
+                  echo "✅ Passed for file: $file" >> $GITHUB_STEP_SUMMARY
+                fi
+              else
+                echo "⚠️ Skipping invalid map file: $file" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+            ;;
+          
+          generate_votes)
+            uv run maps_workflow/main.py --ci --action generate_votes --map ${{ github.workspace }}/$file >> $GITHUB_STEP_SUMMARY 2>&1
+            overall_status=$?
+            ;;
+          
+          check_if_vote_exists)
+            uv run maps_workflow/main.py --ci --action check_if_vote_exists --mapscsv ${{ github.workspace }}/maps.csv >> $GITHUB_STEP_SUMMARY 2>&1
+            overall_status=$?
+            ;;
+          
+          *)
+            echo "❌ Invalid action defined!" >> $GITHUB_STEP_SUMMARY
+            overall_status=1
+            ;;
+        esac
 
-              generate_votes)
-                uv run maps_workflow/main.py --ci --action generate_votes --map ${{ github.workspace }}/$file
-                status=$?
-              ;;
+        # Add the summary to the outputs
+        echo "status<<EOF" >> $GITHUB_OUTPUT
+        cat $GITHUB_STEP_SUMMARY >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
-              check_if_vote_exists)
-                uv run maps_workflow/main.py --ci --action check_if_vote_exists --mapscsv ${{ github.workspace }}/maps.csv
-                status=$?
-              ;;
-
-              *)
-                echo "Invalid action defined!" >> $GITHUB_STEP_SUMMARY
-                exit 1;
-                ;;
-            esac
-
-            {
-              echo "status<<EOF"
-              echo "$(cat $GITHUB_STEP_SUMMARY)"
-              echo "EOF";
-            } >> $GITHUB_OUTPUT
-
-            exit $status
+        # Exit with the overall status
+        exit $overall_status
       shell: bash
       working-directory: ${{ github.action_path }}
