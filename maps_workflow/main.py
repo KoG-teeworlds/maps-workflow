@@ -99,7 +99,18 @@ def execute_rules(raw_file, map_data, config) -> tuple[bool, str]:
                 if rule.type == "require":
                     current_rule_status.status = Status.FAILED
                     logging.error(f"❌ Rule '{rule.name}' failed (REQUIRED). Exiting with error. ({rule_time_elapsed:.2f}s)")
-                    return False
+                    status_symbol = {
+                        Status.COMPLETED: "✅",
+                        Status.FAILED: "❌",
+                        Status.WARN: "⚠️",
+                        Status.SKIP: "⏭️"
+                    }
+                    result_string = f"""#### { status_symbol.get(rule.status, '❌') } {rule.name}
+                    **Explanation**: { rule.explain if rule.status != Status.COMPLETED else '-' }
+                    **Violations**: { "\n" if len(rule.violations) > 0 else "" }
+                    { "\n".join([f"- {r}" for r in rule.violations]) }
+                    """
+                    return False, result_string
                 elif rule.type == "fail":
                     current_rule_status.status = Status.WARN
                     logging.info(f"⚠️ Rule '{rule.name}' failed but continuing. ({rule_time_elapsed:.2f}s)")
@@ -113,7 +124,18 @@ def execute_rules(raw_file, map_data, config) -> tuple[bool, str]:
             if rule.type == "require":
                 current_rule_status.status = Status.FAILED
                 logging.error(f"❌ Rule '{rule.name}' encountered an error (REQUIRED). ({rule_time_elapsed:.2f}s) Exiting: {e}")
-                return False, "❌ Check failed."
+                status_symbol = {
+                    Status.COMPLETED: "✅",
+                    Status.FAILED: "❌",
+                    Status.WARN: "⚠️",
+                    Status.SKIP: "⏭️"
+                }
+                result_string = f"""#### { status_symbol.get(rule.status, '❌') } {rule.rule.name}\n\n
+                **Explanation**: { rule.explain if rule.status != Status.COMPLETED else '-' }\n
+                **Violations**: { "\n" if len(rule.violations) > 0 else "" }
+                { "\n".join([f"- {r}" for r in rule.violations]) }
+                """
+                return False, result_string
             elif rule.type == "fail":
                 current_rule_status.status = Status.WARN
                 logging.error(f"⚠️ Rule '{rule.name}' encountered an error ({rule_time_elapsed:.2f}s): {traceback.print_exc()}")
@@ -130,10 +152,11 @@ def execute_rules(raw_file, map_data, config) -> tuple[bool, str]:
             Status.WARN: "⚠️",
             Status.SKIP: "⏭️"
         }
-        result_string += f"""#### { status_symbol.get(rule.status, '❌') } {rule.rule.name}\n\n
-        **Explanation**: { rule.explain if rule.status != Status.COMPLETED else '-' }\n
-        **Violations**: { "\n" if len(rule.violations) > 0 else "" }
-        { "\n".join([f"- {r}" for r in rule.violations]) }
+        result_string += f"""
+#### { status_symbol.get(rule.status, '❌') } {rule.rule.name}
+**Explanation**: { rule.explain if rule.status != Status.COMPLETED else '-' }
+**Violations**: { "\n" if len(rule.violations) > 0 else "" }
+{ "\n".join([f"- {r}" for r in rule.violations]) }
         """
 
     logging.info("🎉 All rules processed successfully.")
