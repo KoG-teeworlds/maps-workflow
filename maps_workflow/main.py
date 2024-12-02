@@ -166,10 +166,9 @@ if __name__ == '__main__':
     parser.add_argument("--mapscsv")
     args = parser.parse_args()
 
-    file_path = Path(args.map)
-    logging.info(f"Processing file: {args.map}")
-
     if args.action == "check":
+        file_path = Path(args.map)
+        logging.info(f"Processing file: {args.map}")
         excluded = []
         if args.skip:
             if "," in args.skip:
