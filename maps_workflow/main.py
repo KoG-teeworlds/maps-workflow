@@ -190,11 +190,11 @@ if __name__ == '__main__':
         if result[0]:
             logging.info("✅ Workflow completed successfully.")
             if args.ci:
-                os.environ.setdefault("MAPS_WORKFLOW_FAILED", False)
+                os.environ.setdefault("MAPS_WORKFLOW_FAILED", "false")
         else:
             logging.error("❌ Workflow failed due to required rule failure.")
             if args.ci:
-                os.environ.setdefault("MAPS_WORKFLOW_FAILED", True)
+                os.environ.setdefault("MAPS_WORKFLOW_FAILED", "true")
     elif args.action == "optimize":
         pass
     elif args.action == "generate_votes":
