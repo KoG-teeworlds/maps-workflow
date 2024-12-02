@@ -59,21 +59,25 @@ runs:
       id: map-workflow-output
       run: |
             IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
+            status=0
             case ${{ inputs.action }} in
               check)
                   for file in "${FILES[@]}"; do
                     if [[ $file == *.map ]]; then
                       uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci --action check >> $GITHUB_STEP_SUMMARY
+                      status=$?
                     fi
                   done
                 ;;
 
               generate_votes)
                 uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --action generate_votes
+                status=$?
               ;;
 
               check_if_vote_exists)
                 uv run maps_workflow/main.py --mapscsv ${{ github.workspace }}/maps.csv --ci --action check_if_vote_exists
+                status=$?
               ;;
 
               *)
@@ -88,9 +92,6 @@ runs:
               echo "EOF";
             } >> $GITHUB_OUTPUT
 
-            echo $MAPS_WORKFLOW_FAILED
-            if [ -v MAPS_WORKFLOW_FAILED ]; then
-              exit 1;
-            fi
+            exit $status
       shell: bash
       working-directory: ${{ github.action_path }}
