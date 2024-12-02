@@ -72,6 +72,10 @@ runs:
                 uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --action generate_votes
               ;;
 
+              check_if_vote_exists)
+                uv run maps_workflow/main.py --mapscsv ${{ github.workspace }}/maps.csv --ci --action check_if_vote_exists
+              ;;
+
               *)
                 echo "Invalid action defined!"
                 ;;

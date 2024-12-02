@@ -8,8 +8,8 @@ from pydantic import ValidationError
 import twmap
 import argparse
 from ruamel.yaml import YAML
+import csv
 import types
-from shlex import quote
 
 from maps_workflow.baserule import BaseRule, BaseRuleConfig, RuleStatus, Status
 
@@ -162,6 +162,7 @@ if __name__ == '__main__':
     parser.add_argument("--skip")
     parser.add_argument("--ci", action="store_true")
     parser.add_argument("--action", default=os.environ.get("ACTION", "check"))
+    parser.add_argument("--mapscsv")
     args = parser.parse_args()
 
     file_path = Path(args.map)
@@ -193,3 +194,5 @@ if __name__ == '__main__':
         pass
     elif args.action == "generate_votes":
         print("Generating votes... please wait")
+    elif args.action == "check_if_vote_exists":
+        print(f"Reading {args.mapscsv} ...")
