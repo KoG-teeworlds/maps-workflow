@@ -167,13 +167,12 @@ if __name__ == '__main__':
     parser.add_argument("--mapscsv")
     args = parser.parse_args()
 
-    output = []  # Collect all output messages
-    exit_code = 0  # Track exit code
+    output = []
+    exit_code = 0
 
     try:
         if args.action == "check":
             file_path = Path(args.map)
-            output.append(f"Processing file: {args.map}")
             excluded = []
             if args.skip:
                 excluded = args.skip.split(",") if "," in args.skip else [args.skip]
@@ -185,7 +184,6 @@ if __name__ == '__main__':
             if args.ci:
                 output.append(f"## Output for map `{file_path.name}`")
                 output.append(f"### Rules\n{result[1]}")
-                output.append(result[1])
 
             if result[0]:
                 output.append("✅ Workflow completed successfully.")
@@ -200,9 +198,7 @@ if __name__ == '__main__':
         else:
             output.append("❌ Invalid action defined!")
             exit_code = 1
-
     except Exception as e:
-        output.append(f"❌ Unexpected error: {str(e)}")
         exit_code = 1
     finally:
         for line in output:

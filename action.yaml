@@ -91,7 +91,7 @@ runs:
             ;;
         esac
 
-        echo "status<<EOF" >> $GITHUB_OUTPUT
+        echo "status=<<EOF" >> $GITHUB_OUTPUT
         cat $GITHUB_STEP_SUMMARY >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
