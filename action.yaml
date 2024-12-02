@@ -64,19 +64,23 @@ runs:
               check)
                   for file in "${FILES[@]}"; do
                     if [[ $file == *.map ]]; then
-                      uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --ci --action check >> $GITHUB_STEP_SUMMARY
-                      status=$?
+                      uv run maps_workflow/main.py --ci --action check --map ${{ github.workspace }}/$file >> $GITHUB_STEP_SUMMARY
+
+                      # Check if failed, then set it
+                      if [ $? != 0 ]; then
+                        status=$?
+                      fi
                     fi
                   done
                 ;;
 
               generate_votes)
-                uv run maps_workflow/main.py --map ${{ github.workspace }}/$file --action generate_votes
+                uv run maps_workflow/main.py --ci --action generate_votes --map ${{ github.workspace }}/$file
                 status=$?
               ;;
 
               check_if_vote_exists)
-                uv run maps_workflow/main.py --mapscsv ${{ github.workspace }}/maps.csv --ci --action check_if_vote_exists
+                uv run maps_workflow/main.py --ci --action check_if_vote_exists --mapscsv ${{ github.workspace }}/maps.csv
                 status=$?
               ;;
 
