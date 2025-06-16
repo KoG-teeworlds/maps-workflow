@@ -1,10 +1,11 @@
-from typing import Dict, List, Optional
 from enum import Enum
-from pydantic import BaseModel
+from typing import Dict, List, Optional
+
 import twmap
+from pydantic import BaseModel
 
 
-class BaseRule():
+class BaseRule:
     raw_file: str
     map_file: twmap.Map | None
     params: dict
@@ -17,13 +18,13 @@ class BaseRule():
             self.params = self.get_params_model()(**params)
 
     def get_params_model(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def evaluate(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def explain(self) -> str:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class BaseRuleConfig(BaseModel):
