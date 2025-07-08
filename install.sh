@@ -1,6 +1,6 @@
-  #!/bin/bash
+#!/bin/sh
 
-if ! command -v python3 &> /dev/null; then
+if ! command -v python3 >/dev/null 2>&1; then
   echo "Error: Python is required. Please install it and retry."
   exit 1
 fi
@@ -14,10 +14,10 @@ if [ "$(printf '%s\n' "$PYTHON_VERSION" "$REQUIRED_VERSION" | sort -V | head -n1
     exit 1
 fi
 
-if [[ "$1" == "--docker" ]]; then
-   pip install .
+if [ "$1" = "--docker" ]; then
+  pip install .
 else
-  if [ ! -d .venv ]; then
+  if [ ! -d ".venv" ]; then
     python3 -m venv .venv
   fi
 
