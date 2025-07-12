@@ -110,6 +110,13 @@ runs:
         override: true
         profile: minimal
 
+    - name: Install required FFmpeg libraries
+      shell: bash
+      if: ${{ success() }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libavutil-dev libavcodec-dev libavformat-dev
+
     - name: Install twgpu-tools
       if: ${{ success() }}
       shell: bash
