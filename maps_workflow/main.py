@@ -20,13 +20,15 @@ STATUS_SYMBOL = {
 }
 
 
-def load_rules_from_file(_file_path: str):
-    with open(_file_path, "r") as file:
+def load_rules_from_file(file_path: str):
+    """Load rules from a YAML file."""
+    with open(file_path) as file:
         yaml = YAML()
         return yaml.load(file)
 
 
 def load_rule_from_module(rule_name) -> types.ModuleType | None:
+    """Load a rule module by name."""
     try:
         module = importlib.import_module(f"maps_workflow.{rule_name}")
         return module
@@ -36,6 +38,7 @@ def load_rule_from_module(rule_name) -> types.ModuleType | None:
 
 
 def load_all_rules(directory="rules/", exclude=None):
+    """Load all rules from YAML files in a directory."""
     if exclude is None:
         exclude = []
 
@@ -45,27 +48,33 @@ def load_all_rules(directory="rules/", exclude=None):
             continue
 
         if filename.endswith(".yaml"):
-            _file_path = os.path.join(directory, filename)
-            rules = load_rules_from_file(_file_path)
+            file_path = os.path.join(directory, filename)
+            rules = load_rules_from_file(file_path)
             all_rules["rules"].extend(rules["rules"])
     return all_rules
 
 
-def __handle_rule_error(
+def handle_rule_error(
     rule,
     current_rule_status,
     require_log_message: str,
     fail_log_message: str,
     skip_log_message: str,
 ):
+    """Handle rule errors based on rule type."""
     if rule.type == "require":
         current_rule_status.status = Status.FAILED
         logging.error(require_log_message)
+        newline = "\n"
+        violations_text = (
+            f"{newline}{newline.join([f'- {r}' for r in rule.violations])}"
+            if rule.violations
+            else f"{newline}- No violations detected"
+        )
         result_string = (
-            f"\n#### {STATUS_SYMBOL.get(rule.status, '❌')} {rule.rule.name}\n"
-            f"**Explanation**: {rule.explain if rule.status != Status.COMPLETED else '-'}\n"
-            f"**Violations**: {'\n' if len(rule.violations) > 0 else '\n- No violations detected'}\n"
-            f"{'\n'.join([f'- {r}' for r in rule.violations])}"
+            f"{newline}#### {STATUS_SYMBOL.get(rule.status, '❌')} {rule.rule.name}{newline}"
+            f"**Explanation**: {rule.explain if rule.status != Status.COMPLETED else '-'}{newline}"
+            f"**Violations**: {violations_text}"
         )
         return False, result_string
     if rule.type == "fail":
@@ -79,104 +88,118 @@ def __handle_rule_error(
     return None
 
 
-def __format_rule_summary(rule):
+def format_rule_summary(rule):
+    """Format a summary for a rule."""
+    newline = "\n"
+    violations_text = (
+        f"{newline}{newline.join([f'- {r}' for r in rule.violations])}"
+        if rule.violations
+        else f"{newline}- No violations detected"
+    )
     return (
-        f"\n#### {STATUS_SYMBOL.get(rule.status, '❌')} {rule.rule.name}\n"
-        f"**Explanation**: {rule.explain if rule.status != Status.COMPLETED else '-'}\n"
-        f"**Violations**: {'\n' if rule.violations else '\n- No violations detected'}\n"
-        f"{'\n'.join([f'- {r}' for r in rule.violations])}"
+        f"{newline}#### {STATUS_SYMBOL.get(rule.status, '❌')} {rule.rule.name}{newline}"
+        f"**Explanation**: {rule.explain if rule.status != Status.COMPLETED else '-'}{newline}"
+        f"**Violations**: {violations_text}"
     )
 
 
-def execute_rules(raw_file, map_data, _config) -> tuple[bool, str]:  # noqa: C901
+def _process_single_rule(rule_config, rule_status, raw_file, map_data):
+    """Process a single rule configuration."""
+    current_rule_status = RuleStatus(explain=None, status=Status.FAILED, violations=[])
+    try:
+        rule = BaseRuleConfig(**rule_config)
+    except ValidationError as validation_error:
+        logging.error(validation_error)
+        return None
+
+    rule_status[rule.name] = current_rule_status
+    current_rule_status.rule = rule
+
+    # Check dependencies
+    def can_run_rule(rule_name):
+        return rule_name in rule_status and rule_status[rule_name]
+
+    if not all(can_run_rule(dep) for dep in rule.depends_on):
+        logging.info(f"⏭️  Skipping '{rule.name}' due to unmet dependencies.")
+        current_rule_status.passed = Status.FAILED
+        return None
+
+    # Load rule module
+    rule_module = load_rule_from_module(rule.module)
+    if not rule_module:
+        current_rule_status.passed = Status.FAILED
+        return None
+
+    rule_func: BaseRule | None = getattr(rule_module, rule.class_name, None)(raw_file, map_data, rule.params)
+    if rule_func is None:
+        logging.warning(f"⚠️ Rule function '{rule.name}' not found in module '{rule.module}'.")
+        current_rule_status.passed = Status.WARN
+        return None
+
+    return _execute_single_rule(rule, rule_func, current_rule_status)
+
+
+def _execute_single_rule(rule, rule_func, current_rule_status):
+    """Execute a single rule and handle its result."""
+    current_rule_status.explain = rule_func.explain()
+    rule_time_started = time.time()
+
+    try:
+        violations = rule_func.evaluate()
+        rule_time_elapsed = time.time() - rule_time_started
+
+        if violations:
+            current_rule_status.violations = violations
+            for violation in violations:
+                logging.info(f"Violation: {violation}")
+
+            return handle_rule_error(
+                rule,
+                current_rule_status,
+                f"❌ Rule '{rule.name}' failed (REQUIRED). Exiting with error. ({rule_time_elapsed:.2f}s)",
+                f"⚠️ Rule '{rule.name}' failed but continuing. ({rule_time_elapsed:.2f}s)",
+                f"⏭️ Rule '{rule.name}' failed but skipping. ({rule_time_elapsed:.2f}s)",
+            )
+        else:
+            logging.info(f"✅ Rule '{rule.name}' passed. ({rule_time_elapsed:.2f}s)")
+            current_rule_status.status = Status.COMPLETED
+
+    except Exception as exception:
+        rule_time_elapsed = time.time() - rule_time_started
+        error_msg = f"❌ Rule '{rule.name}' encountered an error (REQUIRED). ({rule_time_elapsed:.2f}s)"
+        return handle_rule_error(
+            rule,
+            current_rule_status,
+            f"{error_msg} Exiting: {exception}",
+            f"⚠️ Rule '{rule.name}' encountered an error ({rule_time_elapsed:.2f}s): {traceback.print_exc()}",
+            f"⏭️ Rule '{rule.name}' encountered an error but skipping ({rule_time_elapsed:.2f}s): {exception}",
+        )
+    return None
+
+
+def execute_rules(raw_file, map_data, config) -> tuple[bool, str]:
+    """Execute all rules and return success status and summary."""
     rule_status: dict[str, RuleStatus] = {}
 
-    def can_run_rule(rule_name):
-        """Check if the rule can run based on its dependencies."""
-        if rule_name not in rule_status:
-            return False
-        return rule_status[rule_name]
+    for rule_config in config["rules"]:
+        result = _process_single_rule(rule_config, rule_status, raw_file, map_data)
+        if result is not None:
+            return result
 
-    for rule in _config["rules"]:
-        current_rule_status = RuleStatus(explain=None, status=Status.FAILED, violations=[])
-        try:
-            rule = BaseRuleConfig(**rule)
-        except ValidationError as v:
-            logging.error(v)
-            # rule = BaseRuleConfig({"name": rule["name"]})
-            continue
-
-        rule_status[rule.name] = current_rule_status
-        current_rule_status.rule = rule
-
-        if not all(can_run_rule(dep) for dep in rule.depends_on):
-            logging.info(f"⏭️  Skipping '{rule.name}' due to unmet dependencies.")
-            current_rule_status.passed = Status.FAILED
-            continue
-
-        rule_module = load_rule_from_module(rule.module)
-        if not rule_module:
-            current_rule_status.passed = Status.FAILED
-            continue
-
-        rule_func: BaseRule | None = getattr(rule_module, rule.class_name, None)(
-            raw_file, map_data, rule.params
-        )  # TODO: Fix unexpected errors at this point
-        if rule_func is None:
-            logging.warning(f"⚠️ Rule function '{rule.name}' not found in module '{rule.module}'.")
-            current_rule_status.passed = Status.WARN
-            continue
-
-        current_rule_status.explain = rule_func.explain()
-
-        rule_time_started = time.time()
-        try:
-            violations = rule_func.evaluate()
-            rule_time_elapsed: float = time.time() - rule_time_started
-
-            if violations:
-                current_rule_status.violations = violations
-                for violation in violations:
-                    logging.info(f"Violation: {violation}")
-
-                _result = __handle_rule_error(
-                    rule,
-                    rule_status,
-                    f"❌ Rule '{rule.name}' failed (REQUIRED). Exiting with error. ({rule_time_elapsed:.2f}s)",
-                    f"⚠️ Rule '{rule.name}' failed but continuing. ({rule_time_elapsed:.2f}s)",
-                    f"⏭️ Rule '{rule.name}' failed but skipping. ({rule_time_elapsed:.2f}s)",
-                )
-                if _result is not None:
-                    return _result
-            else:
-                logging.info(f"✅ Rule '{rule.name}' passed. ({rule_time_elapsed:.2f}s)")
-                current_rule_status.status = Status.COMPLETED
-
-        except Exception as e:
-            rule_time_elapsed = time.time() - rule_time_started
-            _result = __handle_rule_error(
-                rule,
-                rule_status,
-                f"❌ Rule '{rule.name}' encountered an error (REQUIRED). ({rule_time_elapsed:.2f}s) Exiting: {e}",
-                f"⚠️ Rule '{rule.name}' encountered an error ({rule_time_elapsed:.2f}s): {traceback.print_exc()}",
-                f"⏭️ Rule '{rule.name}' encountered an error but skipping ({rule_time_elapsed:.2f}s): {e}",
-            )
-            if _result is not None:
-                return _result
-
-    result_string = "".join(__format_rule_summary(rule_status[passed]) for passed in rule_status)
+    result_string = "".join(format_rule_summary(rule_status[passed]) for passed in rule_status)
     logging.info("🎉 All rules processed successfully.")
     return True, result_string
 
 
 def generate_rules_file():
-    _config = load_all_rules("map_rules/", exclude=[])
+    """Generate a list of all available rules with their descriptions."""
+    config = load_all_rules("map_rules/", exclude=[])
     rule_evaluation = []
-    for rule in _config["rules"]:
+    for rule_config in config["rules"]:
         try:
-            rule = BaseRuleConfig(**rule)
-        except ValidationError as v:
-            logging.error(v)
+            rule = BaseRuleConfig(**rule_config)
+        except ValidationError as validation_error:
+            logging.error(validation_error)
             continue
 
         rule_module = load_rule_from_module(rule.module)
@@ -238,7 +261,7 @@ if __name__ == "__main__":
         else:
             output.append("❌ Invalid action defined!")
             exit_code = 1
-    except Exception as e:  # noqa: F841
+    except Exception:
         exit_code = 1
     finally:
         for line in output:
