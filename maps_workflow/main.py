@@ -6,6 +6,7 @@ import time
 import traceback
 import types
 from pathlib import Path
+import vote_menu_generator
 
 import twmap
 from baserule import BaseRule, BaseRuleConfig, RuleStatus, Status
@@ -256,6 +257,7 @@ if __name__ == "__main__":
 
         elif args.action == "generate_votes":
             output.append("Generating votes... please wait")
+            vote_menu_generator.generate_votes()
         elif args.action == "check_if_vote_exists":
             output.append(f"Reading {args.mapscsv} ...")
         else:
