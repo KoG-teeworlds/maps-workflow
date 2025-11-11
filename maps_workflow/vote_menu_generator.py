@@ -1,47 +1,23 @@
-import pandas as pd
+import polars as pl
 import os
+from typing import Dict, Any, List
 
-def get_stars_5_scale(star_value):
-    # Converts a number into a 5-star rating string.
-    star_value = str(star_value)
-    if star_value == '1':
-        return '★☆☆☆☆'
-    elif star_value == '2':
-        return '★★☆☆☆'
-    elif star_value == '3':
-        return '★★☆☆☆'
-    elif star_value == '4':
-        return '★★★★☆'
-    elif star_value == '5':
-        return '★★★★★'
-    else: # To prevent bugs
-        return '☆☆☆☆☆'
+def get_stars(value: str, max_stars: int) -> str:
+    FILLED_STAR = '★'
+    EMPTY_STAR = '☆'
     
-def get_stars_4_scale(star_value):
-    # Converts a number into a 4-star rating string.
-    star_value = str(star_value)
-    if star_value == '1':
-        return '★☆☆☆'
-    elif star_value == '2':
-        return '★★☆☆'
-    elif star_value == '3':
-        return '★★☆☆'
-    elif star_value == '4':
-        return '★★★★'
-    else: # To prevent bugs
-        return '☆☆☆☆'
+    try:
+        # Clean the input string
+        filled_count = int(value.strip('+'))
+    except (ValueError, AttributeError):
+        filled_count = 0
+        
+    filled_count = min(filled_count, max_stars)
+    
+    empty_count = max_stars - filled_count
+    
+    return FILLED_STAR * filled_count + EMPTY_STAR * empty_count
 
-def get_stars_3_scale(star_value):
-    # Converts a number into a 3-star rating string.
-    star_value = str(star_value)
-    if star_value == '1':
-        return '★☆☆'
-    elif star_value == '2':
-        return '★★☆'
-    elif star_value == '3':
-        return '★★☆'
-    else: # To prevent bugs
-        return '☆☆☆'
 
 def get_group_name(length):
     # Finds the group name for a given map length.
@@ -68,49 +44,56 @@ def truncate_display_name(map_name, mapper):
         return mapper[:max_mapper_len]
     return mapper
 
-def generate_vote_file(df, difficulty):
-    # Generates a .cfg file for a given difficulty.
+
+def generate_vote_file(df: pl.DataFrame, difficulty: str):
     print(f"Processing difficulty: {difficulty}...")
     
-    difficulty_maps = df[df['difficulty'] == difficulty].copy()
+    difficulty_maps = df.filter(pl.col('difficulty') == difficulty)
 
-    if difficulty_maps.empty:
+    if difficulty_maps.is_empty():
         print(f" -> No maps found for '{difficulty}'. Skipping.")
         return
 
-    # Counter to make each blank vote unique
     blank_vote_counter = 1
-    
     output_lines = [f'add_vote "{" " * blank_vote_counter}" "info"']
     blank_vote_counter += 1
 
-    # --- Conditional logic for sorting and formatting ---
     if difficulty in ['MOD', 'SOL']:
-        maps_sorted = difficulty_maps.sort_values('map_name')
+        maps_sorted = difficulty_maps.sort('map_name')
         output_lines.append(f'add_vote "__________ {difficulty} Maps __________" "info"')
         
-        for _, row in maps_sorted.iterrows():
-
+        for row in maps_sorted.to_dicts():
             map_name = row["map_name"]
             mappers = row["mappers"]
-            # Truncate mapper name if necessary
             mapper = truncate_display_name(map_name, mappers)
             
-            vote_string = f'add_vote "{map_name} by {mapper} | {get_stars_5_scale(row["stars"])} | {row["points"]} pts" "change_map \\"{row["map_name"]}\\""'
+            stars_display = get_stars(row["stars"], 5)
+            
+            vote_string = f'add_vote "{map_name} by {mapper} | {stars_display} | {row["points"]} pts" "change_map \\"{row["map_name"]}\\""'
             output_lines.append(vote_string)
             
-    # For all other standard difficulties
     else:
-        difficulty_maps['length'] = difficulty_maps['length'].fillna('N/A')
         length_order = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'WTF', 'N/A']
-        difficulty_maps['length'] = pd.Categorical(difficulty_maps['length'], categories=length_order, ordered=True)
-        maps_sorted = difficulty_maps.sort_values('length')
+        
+        rank_expression = pl.when(pl.col('length') == length_order[0]).then(pl.lit(0))
+        
+        for rank, length in enumerate(length_order[1:], start=1):
+             rank_expression = rank_expression.when(pl.col('length') == length).then(pl.lit(rank))
+        
+        rank_expression = rank_expression.otherwise(pl.lit(99)).alias('length_rank')
+        
+        maps_sorted = (
+            difficulty_maps
+            .with_columns(pl.col('length').fill_null('N/A'))
+            .with_columns(rank_expression)
+            .sort('length_rank')
+            .drop('length_rank')
+        )
         
         current_group = ""
-        for _, row in maps_sorted.iterrows():
+        for row in maps_sorted.to_dicts():
             group_name = get_group_name(row['length'])
             if group_name != current_group:
-                # This block adds a blank vote between categories
                 if current_group:
                     output_lines.append(f'add_vote "{" " * blank_vote_counter}" "info"')
                     blank_vote_counter += 1
@@ -120,27 +103,26 @@ def generate_vote_file(df, difficulty):
             
             map_name = row["map_name"]
             mappers = row["mappers"]
-            # Truncate mapper name if necessary
             mapper = truncate_display_name(map_name, mappers)
 
-            # Use 4 stars for EXT, 3 for others
-            if difficulty == 'EXT':
-                stars_display = get_stars_4_scale(row["stars"])
-            else:
-                stars_display = get_stars_3_scale(row["stars"])
 
+            if difficulty == 'EXT':
+                stars_display = get_stars(row["stars"], 4)
+            else:
+                stars_display = get_stars(row["stars"], 3)
+            
             vote_string = f'add_vote "{map_name} by {mapper} | {stars_display} | {row["length"]} | {row["points"]} pts" "change_map \\"{row["map_name"]}\\""'
             output_lines.append(vote_string)
         blank_vote_counter = 2
 
-    output_lines.append('add_vote "        " "info"')
+    output_lines.append('add_vote "       " "info"')
 
-     # Output in 'votes' folder
     file_name = f"votes_{difficulty.lower()}.cfg"
     output_path = os.path.join('votes', file_name)
     
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(output_lines))
+        f.write('\n')
         
     print(f" -> ✅ Successfully created vote menu: {output_path}")
 
@@ -149,7 +131,12 @@ def generate_vote_file(df, difficulty):
 def generate_votes():
 
     try:
-        main_df = pd.read_csv('kog_maps.csv')
+        main_df = pl.read_csv(
+            'kog_maps.csv', 
+            schema_overrides={'stars': pl.String}, 
+            quote_char=None
+        )
+        
         os.makedirs('votes', exist_ok=True)
 
         difficulties_to_process = ['SOL', 'ESY', 'MN', 'HRD', 'INS', 'EXT', 'MOD']
