@@ -101,3 +101,48 @@ runs:
         # exit $overall_status
       shell: bash
       working-directory: ${{ github.action_path }}
+
+    - name: Install Rust
+      if: ${{ success() }}
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        profile: minimal
+
+    - name: Install required FFmpeg libraries
+      shell: bash
+      if: ${{ success() }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+        libavcodec-dev \
+        libavutil-dev \
+        libavformat-dev \
+        libavfilter-dev \
+        libavdevice-dev
+
+    - name: Install twgpu-tools
+      if: ${{ success() }}
+      shell: bash
+      run: cargo install twgpu-tools
+
+    - name: Create map screenshots
+      if: ${{ success() }}
+      shell: bash
+      run: |
+        IFS=',' read -ra FILES <<< "${{ inputs.maps }}"
+        for file in "${FILES[@]}"; do
+          if [[ $file == *.map ]]; then
+            echo "Rendering $file."
+            twgpu-map-photography "$file" || echo "Failed to render $file"
+          fi
+        done
+      working-directory: ${{ github.workspace }}
+
+    - name: Upload screenshots as artifact
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: map-screenshots
+        path: ./*.png
