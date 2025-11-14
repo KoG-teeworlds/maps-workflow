@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.10.1",
     "ruamel.yaml>=0.18.6",
     "twmap>=0.6.2",
+    "polars>=1.35.2",
 ]
 
 [build-system]
